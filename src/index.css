@@ -1,1 +1,152 @@
 @import 'tailwindcss';
+@import '@fontsource/barlow/latin-400.css';
+@import '@fontsource/barlow/latin-500.css';
+@import '@fontsource/barlow/latin-600.css';
+@import '@fontsource/barlow-condensed/latin-600.css';
+@import '@fontsource/barlow-condensed/latin-700.css';
+
+/* Colores del prototipo. El mapa lee --chofer, --puerta, --nosun y --casing para pintar la ruta. */
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --card: #f3f4f6;
+  --ink: #16181d;
+  --mute: #5b616e;
+  --line: #dfe2e7;
+  --brand: #d7262e;
+  --chofer: #d7262e;
+  --puerta: #2160c4;
+  --sun: #ffb800;
+  --nosun: #9aa1ac;
+  --casing: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14161b;
+    --card: #1e2128;
+    --ink: #f2f3f5;
+    --mute: #a3a9b5;
+    --line: #2f343d;
+    --chofer: #f0555c;
+    --puerta: #5b95f0;
+    --nosun: #7d8592;
+    --casing: #14161b;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-mute: var(--mute);
+  --color-line: var(--line);
+  --color-brand: var(--brand);
+  --color-chofer: var(--chofer);
+  --color-puerta: var(--puerta);
+  --color-sun: var(--sun);
+  --color-nosun: var(--nosun);
+  --font-sans: Barlow, system-ui, sans-serif;
+  --font-display: 'Barlow Condensed', Barlow, system-ui, sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-bg font-sans text-base text-ink antialiased;
+  }
+  input,
+  button,
+  select {
+    font: inherit;
+  }
+  :focus-visible {
+    outline: 3px solid var(--sun);
+    outline-offset: 2px;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes halo {
+  from {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  to {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+@keyframes shimmer {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+@utility animate-pop {
+  animation: pop 0.45s ease-out;
+}
+
+/* Animaciones de la micro: solo si la persona no pidió reducir movimiento. */
+@media (prefers-reduced-motion: no-preference) {
+  .bus-sun {
+    transition:
+      transform 0.7s cubic-bezier(0.3, 0.7, 0.3, 1),
+      opacity 0.4s;
+  }
+  .bus-glow {
+    transition: opacity 0.5s;
+  }
+  .bus-you {
+    transition:
+      transform 0.6s cubic-bezier(0.3, 0.7, 0.3, 1),
+      opacity 0.3s;
+  }
+  .bus-halo {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: halo 2.4s ease-out infinite;
+  }
+  .bus-rays line {
+    animation: shimmer 1.8s ease-in-out infinite;
+  }
+  .bus-rays line:nth-child(2) {
+    animation-delay: 0.3s;
+  }
+  .bus-rays line:nth-child(3) {
+    animation-delay: 0.6s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Controles de MapLibre con la tipografía y los colores de la app. */
+.maplibregl-ctrl-attrib {
+  font-family: inherit;
+  font-size: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  .maplibregl-ctrl-attrib {
+    background: rgb(20 22 27 / 0.85) !important;
+    color: var(--mute);
+  }
+  .maplibregl-ctrl-attrib a {
+    color: var(--ink) !important;
+  }
+}

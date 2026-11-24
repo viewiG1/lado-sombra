@@ -8,6 +8,8 @@ import { defineConfig } from 'vite'
 // GPS funcione al probar desde el teléfono en la misma red wifi.
 export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss(), ...(mode === 'https' ? [basicSsl()] : [])],
+  // MapLibre (~1,1 MB) va en su propio archivo y se carga después del panel.
+  build: { chunkSizeWarningLimit: 1200 },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
