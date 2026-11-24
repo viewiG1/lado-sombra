@@ -4,38 +4,35 @@ import type { AppError } from '../lib/errors'
 import { describeVerdict } from '../lib/verdictText'
 import { BusDiagram } from './BusDiagram'
 import { Spinner } from './icons'
+import { TripTimeline } from './TripTimeline'
 
 type Props =
   | { state: 'empty' }
   | { state: 'loading' }
   | { state: 'error'; error: AppError; onRetry: () => void }
-  | { state: 'ready'; analysis: Analysis }
+  | { state: 'ready'; analysis: Analysis; departure: string }
 
-function Meter({ label, minutes, total, color }: { label: string; minutes: number; total: number; color: string }) {
-  const m = Math.round(minutes)
-  const pct = total > 0 ? Math.min(100, (minutes / total) * 100) : 0
-  return (
-    <div>
-      <div className="flex justify-between gap-2 text-sm">
-        <span>{label}</span>
-        <span className="whitespace-nowrap tabular-nums">{m} min</span>
-      </div>
-      <div className="mt-1 h-2 overflow-hidden rounded-full bg-card" aria-hidden="true">
-        <div className="h-full rounded-full motion-safe:transition-[width] motion-safe:duration-400" style={{ width: `${pct}%`, background: color }} />
-      </div>
-    </div>
-  )
-}
+/** Ejemplo para la pantalla inicial: sol en el lado puerta, asiento al lado del chofer. */
+const EXAMPLE = { sun: { relAngle: 75, elevation: 30 }, lit: 'puerta', recommended: 'chofer' } as const
 
 export function VerdictCard(props: Props) {
   let headline: ReactNode
-  let detail: ReactNode = null
-  let hint: string | null = null
+  let body: ReactNode = null
   let headlineKey: string = props.state
 
   if (props.state === 'empty') {
-    headline = 'Elige tu destino'
-    detail = 'Busca a dónde vas o toca el mapa, y te digo de qué lado sentarte.'
+    headline = '¿A dónde vas?'
+    body = (
+      <div className="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center gap-3">
+        <p className="text-[15px] text-mute">
+          Elige desde dónde y hasta dónde vas (o toca el mapa). Te digo de qué lado va a pegar el sol y en cuál quedas a la sombra.
+        </p>
+        <figure className="m-0">
+          <BusDiagram {...EXAMPLE} />
+          <figcaption className="text-center text-xs text-mute">Ejemplo: sol en la puerta, tú al lado del chofer</figcaption>
+        </figure>
+      </div>
+    )
   } else if (props.state === 'loading') {
     headline = (
       <span className="flex items-center gap-2 text-mute">
@@ -44,17 +41,18 @@ export function VerdictCard(props: Props) {
     )
   } else if (props.state === 'error') {
     headline = 'No pude calcular'
-    detail = (
-      <>
-        {props.error.message}{' '}
-        <button type="button" onClick={props.onRetry} className="mt-2 block min-h-11 rounded-xl bg-ink px-4 font-semibold text-bg">
+    body = (
+      <div className="mt-2 text-[15px] text-mute">
+        <p>{props.error.message}</p>
+        <button type="button" onClick={props.onRetry} className="mt-3 min-h-11 rounded-xl bg-ink px-4 font-semibold text-bg">
           Intentar de nuevo
         </button>
-      </>
+      </div>
     )
   } else {
-    const t = describeVerdict(props.analysis)
-    headlineKey = `${props.analysis.verdict.kind}-${t.side ?? ''}`
+    const { analysis, departure } = props
+    const t = describeVerdict(analysis)
+    headlineKey = `${analysis.verdict.kind}-${t.side ?? t.reason ?? ''}`
     headline = (
       <>
         {t.lead}
@@ -66,37 +64,28 @@ export function VerdictCard(props: Props) {
         )}
       </>
     )
-    detail = t.detail
-    hint = t.hint
+    const recommended = analysis.verdict.kind === 'sentarse' ? analysis.verdict.side : null
+    body = (
+      <>
+        <p className="mt-2 text-[15px] text-mute">{t.detail}</p>
+        {t.hint && <p className="mt-1 text-sm text-mute">{t.hint}</p>}
+        <div className="mx-auto mt-2 w-full max-w-[240px]">
+          <BusDiagram sun={analysis.dominant ?? analysis.sky} lit={analysis.dominant?.side ?? null} recommended={recommended} />
+        </div>
+        <TripTimeline departure={departure} totalMinutes={analysis.totalMinutes} minutes={analysis.minutes} runs={analysis.runs} />
+      </>
+    )
   }
-
-  const analysis = props.state === 'ready' ? props.analysis : null
-  const recommended = analysis?.verdict.kind === 'sentarse' ? analysis.verdict.side : null
 
   return (
     <section aria-labelledby="verdict" className="rounded-2xl border border-line p-4">
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 max-[359px]:grid-cols-1">
-        <div>
-          {/* Solo el titular se anuncia: así el deslizador no llena el lector de pantalla de avisos. */}
-          <div aria-live="polite" aria-atomic="true">
-            <h2 id="verdict" key={headlineKey} className="animate-pop font-display text-[30px] leading-[1.05] sm:text-[34px] font-bold text-balance">
-              {headline}
-            </h2>
-          </div>
-          {detail && <div className="mt-2 text-[15px] text-mute">{detail}</div>}
-          {hint && <p className="mt-1 text-sm text-mute">{hint}</p>}
-        </div>
-        <div className="w-[120px] max-[359px]:mx-auto sm:w-[150px]">
-          <BusDiagram recommended={recommended} dominant={analysis?.dominant ?? null} />
-        </div>
+      {/* Solo el titular se anuncia: así el deslizador no llena el lector de pantalla de avisos. */}
+      <div aria-live="polite" aria-atomic="true">
+        <h2 id="verdict" key={headlineKey} className="animate-pop font-display text-[32px] leading-[1.05] font-bold text-balance sm:text-[36px]">
+          {headline}
+        </h2>
       </div>
-
-      {analysis && (
-        <div className="mt-3 grid gap-2">
-          <Meter label="Sol en el lado chofer" minutes={analysis.minutes.chofer} total={analysis.totalMinutes} color="var(--chofer)" />
-          <Meter label="Sol en el lado puerta" minutes={analysis.minutes.puerta} total={analysis.totalMinutes} color="var(--puerta)" />
-        </div>
-      )}
+      {body}
     </section>
   )
 }

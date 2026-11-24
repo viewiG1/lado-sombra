@@ -1,7 +1,11 @@
-import { getPosition } from 'suncalc'
+import { getPosition, getTimes } from 'suncalc'
+import { chileNow, chileToUtc } from './time'
 
 /** Lado de la micro donde pega el sol. Chile: chofer a la izquierda, puerta a la derecha. */
 export type Side = 'chofer' | 'puerta' | 'none'
+
+/** Dónde está el sol respecto de la micro: un lado, o el motivo por el que no pega de lado. */
+export type Situation = 'chofer' | 'puerta' | 'frente' | 'atras' | 'alto' | 'noche'
 
 export interface SunPosition {
   /** Grados desde el norte, en sentido horario. */
@@ -25,11 +29,30 @@ export function relativeAngle(sunAzimuth: number, heading: number): number {
   return (((sunAzimuth - heading) % 360) + 360) % 360
 }
 
-export function classifySide(sun: SunPosition, heading: number): Side {
-  if (sun.elevation <= 0 || sun.elevation >= MAX_SIDE_ELEVATION) return 'none'
+export function sunSituation(sun: SunPosition, heading: number): Situation {
+  if (sun.elevation <= 0) return 'noche'
+  if (sun.elevation >= MAX_SIDE_ELEVATION) return 'alto'
   const rel = relativeAngle(sun.azimuth, heading)
   const t = FRONT_BACK_TOLERANCE
-  if (rel < t || rel > 360 - t) return 'none' // de frente
-  if (rel > 180 - t && rel < 180 + t) return 'none' // por atrás
+  if (rel < t || rel > 360 - t) return 'frente'
+  if (rel > 180 - t && rel < 180 + t) return 'atras'
   return rel < 180 ? 'puerta' : 'chofer'
+}
+
+export function classifySide(sun: SunPosition, heading: number): Side {
+  const s = sunSituation(sun, heading)
+  return s === 'chofer' || s === 'puerta' ? s : 'none'
+}
+
+/** Hora de Chile ("HH:MM") a la que sale y se pone el sol ese día en ese lugar; null si no se puede calcular. */
+export function sunTimes(date: string, lat: number, lon: number): { sunrise: string; sunset: string } | null {
+  let noon: number
+  try {
+    noon = chileToUtc(date, '12:00')
+  } catch {
+    return null
+  }
+  const t = getTimes(new Date(noon), lat, lon)
+  if (!t.sunrise || !t.sunset) return null
+  return { sunrise: chileNow(t.sunrise.getTime()).time, sunset: chileNow(t.sunset.getTime()).time }
 }

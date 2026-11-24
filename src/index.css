@@ -19,6 +19,10 @@
   --sun: #ffb800;
   --nosun: #9aa1ac;
   --casing: #ffffff;
+  --bus-shadow: rgb(22 24 29 / 0.16);
+  --sun-seat: #ffd66b;
+  --sun-day: #ffd35c;
+  --sun-night: #3b4352;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -32,6 +36,10 @@
     --puerta: #5b95f0;
     --nosun: #7d8592;
     --casing: #14161b;
+    --bus-shadow: rgb(0 0 0 / 0.38);
+    --sun-seat: #a77a12;
+    --sun-day: #d9a21b;
+    --sun-night: #2f343d;
   }
 }
 
@@ -97,18 +105,18 @@
 
 /* Animaciones de la micro: solo si la persona no pidió reducir movimiento. */
 @media (prefers-reduced-motion: no-preference) {
-  .bus-sun {
+  /* El sol recorre su órbita (rotate + translate se interpolan por separado: avanza en arco). */
+  .bus-sun,
+  .bus-anim {
     transition:
-      transform 0.7s cubic-bezier(0.3, 0.7, 0.3, 1),
-      opacity 0.4s;
+      transform 0.8s cubic-bezier(0.3, 0.7, 0.3, 1),
+      opacity 0.5s;
   }
-  .bus-glow {
+  .bus-fade {
     transition: opacity 0.5s;
   }
-  .bus-you {
-    transition:
-      transform 0.6s cubic-bezier(0.3, 0.7, 0.3, 1),
-      opacity 0.3s;
+  .bus-fill {
+    transition: fill 0.5s;
   }
   .bus-halo {
     transform-box: fill-box;
@@ -155,4 +163,55 @@
 .maplibregl-ctrl.maplibregl-ctrl-group button {
   width: 44px;
   height: 44px;
+}
+
+/* Deslizador de hora: la pista muestra día y noche; la perilla es un sol. */
+.time-range {
+  appearance: none;
+  height: 44px;
+  background: transparent;
+  cursor: pointer;
+}
+.time-range::-webkit-slider-runnable-track {
+  height: 12px;
+  border-radius: 999px;
+  background: var(--track, var(--sun-day));
+}
+.time-range::-moz-range-track {
+  height: 12px;
+  border-radius: 999px;
+  background: var(--track, var(--sun-day));
+}
+.time-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 30px;
+  height: 30px;
+  margin-top: -9px;
+  border-radius: 50%;
+  background: var(--sun);
+  border: 3px solid var(--bg);
+  box-shadow:
+    0 0 0 1px var(--ink),
+    0 2px 6px rgb(0 0 0 / 0.25);
+}
+.time-range::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--sun);
+  border: 3px solid var(--bg);
+  box-shadow:
+    0 0 0 1px var(--ink),
+    0 2px 6px rgb(0 0 0 / 0.25);
+}
+.time-range:focus-visible {
+  outline: none;
+}
+.time-range:focus-visible::-webkit-slider-thumb {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+.time-range:focus-visible::-moz-range-thumb {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
 }

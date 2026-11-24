@@ -13,7 +13,9 @@ import { analyzeRoute, type Analysis } from './lib/analyze'
 import { errorMessage } from './lib/errors'
 import type { Favorite } from './lib/favorites'
 import type { LatLon, Place } from './lib/place'
+import { sunTimes } from './lib/sun'
 import { chileNow, chileToUtc } from './lib/time'
+import { DEFAULT_VIEW } from './config'
 import { createNominatimGeocoder } from './services/geocoding'
 import { createOsrmProvider } from './services/routing'
 
@@ -64,6 +66,11 @@ export default function App() {
     }
   }, [date, time])
   const deferredDeparture = useDeferredValue(departure)
+
+  // Salida y puesta del sol ese día, en el origen (o en Santiago mientras no haya origen).
+  const sunLat = from?.lat ?? DEFAULT_VIEW.latitude
+  const sunLon = from?.lon ?? DEFAULT_VIEW.longitude
+  const daylight = useMemo(() => sunTimes(date, sunLat, sunLon), [date, sunLat, sunLon])
 
   const analysis: Analysis | null = useMemo(() => {
     if (!route.route || deferredDeparture === null) return null
@@ -117,7 +124,7 @@ export default function App() {
     ) : route.status === 'error' ? (
       <VerdictCard state="error" error={route.error} onRetry={route.retry} />
     ) : analysis ? (
-      <VerdictCard state="ready" analysis={analysis} />
+      <VerdictCard state="ready" analysis={analysis} departure={time} />
     ) : (
       <VerdictCard state="loading" />
     )
@@ -180,6 +187,7 @@ export default function App() {
           {card}
 
           <TimeControls
+            sun={daylight}
             date={date}
             time={time}
             onDateChange={(d) => setWhen((w) => ({ ...w, date: d }))}

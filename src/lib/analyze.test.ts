@@ -134,3 +134,53 @@ describe('analyzeRoute: tramos para el mapa', () => {
     expect(() => analyzeRoute(route(straight(START, 1, 1), 60), Number.NaN)).toThrow(RangeError)
   })
 })
+
+describe('analyzeRoute: el sol aunque no pegue de lado', () => {
+  test('mediodía de verano: motivo "alto" y el sol queda registrado con su elevación', () => {
+    const a = analyzeRoute(route(straight(START, 3, -1), 600), chileToUtc('2026-12-21', '13:40'))
+    expect(a.reasons.alto).toBeCloseTo(15, 6)
+    expect(a.sky).not.toBeNull()
+    expect(a.sky!.elevation).toBeGreaterThan(65)
+  })
+
+  test('de noche: motivo "noche" y sin sol', () => {
+    const a = analyzeRoute(route(straight(START, 3, 1), 600), chileToUtc('2026-11-24', '23:00'))
+    expect(a.reasons.noche).toBeCloseTo(15, 6)
+    expect(a.sky).toBeNull()
+  })
+
+  test('hacia el oeste a las 18:00: sol de frente', () => {
+    const west: LngLat[] = Array.from({ length: 11 }, (_, i): LngLat => [START[0] - (0.03 * i) / 10, START[1]])
+    const a = analyzeRoute(route(west, 600), AT_18)
+    expect(a.reasons.frente).toBeGreaterThan(a.totalMinutes * 0.9)
+    expect(a.verdict).toEqual({ kind: 'da-lo-mismo' })
+    // de frente: ángulo relativo cerca de 0
+    const rel = a.sky!.relAngle
+    expect(Math.min(rel, 360 - rel)).toBeLessThan(20)
+  })
+
+  test('hacia el este a las 18:00: sol por atrás', () => {
+    const east: LngLat[] = Array.from({ length: 11 }, (_, i): LngLat => [START[0] + (0.03 * i) / 10, START[1]])
+    const a = analyzeRoute(route(east, 600), AT_18)
+    expect(a.reasons.atras).toBeGreaterThan(a.totalMinutes * 0.9)
+    expect(Math.abs(a.sky!.relAngle - 180)).toBeLessThan(20)
+  })
+
+  test('los motivos suman los minutos sin sol de lado', () => {
+    const a = analyzeRoute(route(straight(START, 3, -1), 600), chileToUtc('2026-12-21', '13:40'))
+    const r = a.reasons
+    expect(r.noche + r.alto + r.frente + r.atras).toBeCloseTo(a.minutes.none, 6)
+  })
+
+  test('el lado dominante trae la elevación promedio del sol', () => {
+    const a = analyzeRoute(route(straight(START, 3, -1), 600), AT_18)
+    expect(a.dominant!.elevation).toBeGreaterThan(10)
+    expect(a.dominant!.elevation).toBeLessThan(45)
+  })
+
+  test('cada tramo del mapa trae sus minutos y suman el viaje', () => {
+    const south = straight(START, 2, -1, 5)
+    const a = analyzeRoute(route([...south, ...straight(south.at(-1)!, 2, 1, 5).slice(1)], 600), AT_18)
+    expect(a.runs.reduce((s, r) => s + r.minutes, 0)).toBeCloseTo(a.totalMinutes, 6)
+  })
+})

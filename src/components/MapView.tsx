@@ -53,12 +53,14 @@ function readRouteColors(theme: string) {
 }
 
 function PointMarker({ place, kind }: { place: Place; kind: 'from' | 'to' }) {
+  const text = kind === 'from' ? 'Desde' : 'Hasta'
   return (
-    <Marker longitude={place.lon} latitude={place.lat} anchor="center">
-      <div
-        title={kind === 'from' ? `Desde: ${place.name}` : `Hasta: ${place.name}`}
-        className={`size-5 rounded-full border-[3px] border-ink shadow ${kind === 'from' ? 'bg-bg' : 'bg-ink'}`}
-      />
+    <Marker longitude={place.lon} latitude={place.lat} anchor="bottom" offset={[0, 8]}>
+      <div title={`${text}: ${place.name}`} className="flex flex-col items-center">
+        <span className="rounded-md bg-ink px-1.5 py-0.5 text-xs font-semibold text-bg shadow">{text}</span>
+        <span className="h-2 w-0.5 bg-ink" />
+        <span className={`size-4 rounded-full border-[3px] border-ink shadow ${kind === 'from' ? 'bg-bg' : 'bg-ink'}`} />
+      </div>
     </Marker>
   )
 }

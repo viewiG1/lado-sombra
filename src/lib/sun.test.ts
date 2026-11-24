@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { chileToUtc } from './time'
-import { classifySide, relativeAngle, sunPosition } from './sun'
+import { classifySide, relativeAngle, sunPosition, sunSituation, sunTimes } from './sun'
 
 const STGO = { lat: -33.4378, lon: -70.6506 }
 
@@ -62,5 +62,45 @@ describe('classifySide', () => {
     expect(classifySide(sun(90, -5), 0)).toBe('none')
     expect(classifySide(sun(90, 65), 0)).toBe('none')
     expect(classifySide(sun(90, 64.9), 0)).toBe('puerta')
+  })
+})
+
+describe('sunSituation: lado o motivo por el que no pega de lado', () => {
+  const sun = (azimuth: number, elevation = 30) => ({ azimuth, elevation })
+
+  test.each([
+    [sun(270), 180, 'puerta'],
+    [sun(270), 0, 'chofer'],
+    [sun(10), 0, 'frente'],
+    [sun(350), 0, 'frente'],
+    [sun(180), 0, 'atras'],
+    [sun(90, 70), 0, 'alto'],
+    [sun(90, -3), 0, 'noche'],
+    [sun(10, 70), 0, 'alto'], // muy alto gana sobre de frente
+  ] as const)('%o con rumbo %i → %s', (s, heading, expected) => {
+    expect(sunSituation(s, heading)).toBe(expected)
+  })
+
+  test('es coherente con classifySide', () => {
+    for (let az = 0; az < 360; az += 7) {
+      for (const el of [-5, 10, 40, 70]) {
+        const sit = sunSituation(sun(az, el), 0)
+        const side = classifySide(sun(az, el), 0)
+        expect(side).toBe(sit === 'chofer' || sit === 'puerta' ? sit : 'none')
+      }
+    }
+  })
+})
+
+describe('sunTimes', () => {
+  test('Santiago, 24 nov: amanece cerca de las 6:27 y se pone cerca de las 20:31 (hora de Chile)', () => {
+    const t = sunTimes('2026-11-24', STGO.lat, STGO.lon)
+    expect(t).not.toBeNull()
+    expect(t!.sunrise).toMatch(/^06:[23]\d$/)
+    expect(t!.sunset).toMatch(/^20:[23]\d$/)
+  })
+
+  test('fecha inválida → null', () => {
+    expect(sunTimes('nada', STGO.lat, STGO.lon)).toBeNull()
   })
 })

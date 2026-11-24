@@ -53,19 +53,23 @@ describe('App', () => {
   test('flujo completo: buscar, recomendar, mover la hora sin volver a pedir la ruta e invertir', async () => {
     const user = userEvent.setup()
     render(<App />)
-    expect(screen.getByRole('heading', { name: 'Elige tu destino' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '¿A dónde vas?' })).toBeInTheDocument()
 
     setDateTime('2026-11-24', '18:00')
     await searchAndPick(user, 'Desde', 'plaza de armas', 'Plaza de Armas')
     await searchAndPick(user, 'Hasta', 'destino sur', 'Destino Sur')
 
     expect(await screen.findByRole('heading', { name: /Siéntate al lado del chofer/ })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: /pega en el lado puerta. Tu asiento: lado chofer, a la sombra/ })).toBeInTheDocument()
+    expect(screen.getByText('Salida 18:00')).toBeInTheDocument()
     const routeCalls = () => fetchMock.mock.calls.filter(([u]) => String(u).includes('/route/v1/')).length
     expect(routeCalls()).toBe(1)
 
     // Mediodía de verano: el sol está muy alto. Recalcula sin pedir otra ruta.
     setDateTime('2026-12-21', '13:40')
     expect(await screen.findByRole('heading', { name: 'Da lo mismo' })).toBeInTheDocument()
+    expect(screen.getByText(/El sol va casi encima de la micro/)).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: /El sol va casi encima de la micro./ })).toBeInTheDocument()
     expect(routeCalls()).toBe(1)
 
     // Viaje de vuelta (hacia el norte) a las 18:00: al revés.
