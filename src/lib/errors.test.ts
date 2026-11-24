@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { AppError, errorMessage, isAbortError, type AppErrorKind } from './errors'
 
 describe('errores', () => {
-  const kinds: AppErrorKind[] = ['offline', 'gps-denied', 'gps-unavailable', 'not-found', 'no-route', 'service', 'timeout']
+  const kinds: AppErrorKind[] = ['offline', 'gps-denied', 'gps-unavailable', 'gps-insecure', 'not-found', 'no-route', 'service', 'timeout']
 
   test.each(kinds)('%s tiene un mensaje en español', (kind) => {
     const msg = errorMessage(new AppError(kind))
@@ -13,6 +13,7 @@ describe('errores', () => {
   test('mensajes clave', () => {
     expect(errorMessage(new AppError('offline'))).toMatch(/conexión/i)
     expect(errorMessage(new AppError('gps-denied'))).toMatch(/permiso/i)
+    expect(errorMessage(new AppError('gps-insecure'))).toMatch(/https/)
     expect(errorMessage(new AppError('not-found'))).toMatch(/no encontré ese lugar/i)
     expect(errorMessage(new AppError('no-route'))).toMatch(/ruta/i)
   })

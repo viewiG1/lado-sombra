@@ -169,7 +169,7 @@ export default function MapView({ from, to, routeCoords, runs, onPick }: MapView
         'NavigationControl.ZoomIn': 'Acercar',
         'NavigationControl.ZoomOut': 'Alejar',
         'AttributionControl.ToggleAttribution': 'Mostrar u ocultar créditos',
-        'Map.Title': 'Mapa',
+        'Map.Title': 'Mapa interactivo: toca para marcar desde o hasta',
       }}
     >
       <NavigationControl position="top-right" showCompass={false} />

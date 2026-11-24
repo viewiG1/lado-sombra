@@ -69,6 +69,17 @@ describe('useGeolocation', () => {
     })
   })
 
+  test('página sin https → gps-insecure, sin pedir la ubicación', async () => {
+    const getCurrentPosition = vi.fn()
+    vi.stubGlobal('navigator', { ...navigator, geolocation: { getCurrentPosition } })
+    vi.stubGlobal('isSecureContext', false)
+    const { result } = renderHook(() => useGeolocation())
+    await act(async () => {
+      await expect(result.current.locate()).rejects.toMatchObject({ kind: 'gps-insecure' })
+    })
+    expect(getCurrentPosition).not.toHaveBeenCalled()
+  })
+
   test('navegador sin GPS → gps-unavailable', async () => {
     vi.stubGlobal('navigator', {})
     const { result } = renderHook(() => useGeolocation())

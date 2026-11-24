@@ -1,6 +1,6 @@
 # Lado Sombra — Diseño y plan de la fase 1
 
-Estado: **borrador, esperando aprobación**. No se escribe código hasta que se apruebe.
+Estado: **aprobado el 2026-11-24 con las recomendaciones (A–D); fase 1 terminada**.
 
 ## 1. Lo que sacamos del prototipo (y lo que cambia)
 

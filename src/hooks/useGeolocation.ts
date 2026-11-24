@@ -15,6 +15,11 @@ export function useGeolocation() {
           reject(new AppError('gps-unavailable'))
           return
         }
+        // Por http (salvo localhost) el navegador niega la ubicación como si fuera falta de permiso.
+        if (typeof window !== 'undefined' && window.isSecureContext === false) {
+          reject(new AppError('gps-insecure'))
+          return
+        }
         setLoading(true)
         geo.getCurrentPosition(
           (pos) => {

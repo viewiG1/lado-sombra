@@ -150,3 +150,9 @@
     color: var(--ink) !important;
   }
 }
+
+/* Botones de zoom de al menos 44 px, como el resto de la app. */
+.maplibregl-ctrl.maplibregl-ctrl-group button {
+  width: 44px;
+  height: 44px;
+}

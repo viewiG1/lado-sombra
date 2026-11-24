@@ -1,9 +1,10 @@
-export type AppErrorKind = 'offline' | 'gps-denied' | 'gps-unavailable' | 'not-found' | 'no-route' | 'service' | 'timeout'
+export type AppErrorKind = 'offline' | 'gps-denied' | 'gps-unavailable' | 'gps-insecure' | 'not-found' | 'no-route' | 'service' | 'timeout'
 
 const MESSAGES: Record<AppErrorKind, string> = {
   offline: 'Estás sin conexión. Revisa tu wifi o tus datos móviles e intenta de nuevo.',
   'gps-denied': 'No tengo permiso para ver tu ubicación. Actívalo en los ajustes del navegador o escribe la dirección.',
   'gps-unavailable': 'No pude obtener tu ubicación. Intenta de nuevo o escribe la dirección.',
+  'gps-insecure': 'El navegador solo comparte tu ubicación si la app se abre con https. Ábrela con https o escribe dónde estás.',
   'not-found': 'No encontré ese lugar. Prueba con calle, número y comuna.',
   'no-route': 'No encontré una ruta entre esos puntos. Prueba con lugares más cerca de una calle.',
   service: 'El servicio no respondió bien. Intenta de nuevo en un rato.',

@@ -126,7 +126,7 @@ export default function App() {
     <div className="flex min-h-dvh flex-col lg:h-dvh">
       <header className="flex flex-wrap items-baseline gap-x-3 bg-brand px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 text-white">
         <h1 className="font-display text-3xl leading-none font-bold">Lado Sombra</h1>
-        <p className="text-[15px] opacity-90">¿De qué lado me siento en la micro?</p>
+        <p className="text-[15px]">¿De qué lado me siento en la micro?</p>
       </header>
 
       <main className="flex flex-1 flex-col lg:grid lg:min-h-0 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
@@ -219,7 +219,7 @@ export default function App() {
           </footer>
         </div>
 
-        <section aria-label="Mapa" className="order-1 flex flex-col lg:order-none lg:min-h-0">
+        <section aria-label="Mapa de la ruta" className="order-1 flex flex-col lg:order-none lg:min-h-0">
           <div className="relative h-[40dvh] min-h-64 lg:h-auto lg:flex-1">
             <MapErrorBoundary>
               <Suspense fallback={<div className="h-full animate-pulse bg-card motion-reduce:animate-none" />}>
