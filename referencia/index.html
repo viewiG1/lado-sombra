@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#d7262e">
+<title>Lado Sombra</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fff;--card:#f3f4f6;--ink:#16181d;--mute:#5b616e;--line:#dfe2e7;--red:#d7262e;--blue:#2160c4;--sun:#ffb800;--gray:#b9bec7}
+@media(prefers-color-scheme:dark){:root{--bg:#14161b;--card:#1e2128;--ink:#f2f3f5;--mute:#a3a9b5;--line:#2f343d;--blue:#5b95f0;--gray:#545b67}.leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9)}}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Barlow,system-ui,sans-serif}
+h1,.big{font-family:"Barlow Condensed",Barlow,sans-serif;line-height:1.05;margin:0;text-wrap:balance}
+header{background:var(--red);color:#fff;padding:14px max(4vw,16px);display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+header h1{font-size:30px}header span{opacity:.9;font-size:15px}
+main{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);min-height:calc(100dvh - 62px)}
+.panel{padding:18px max(3vw,16px);border-right:1px solid var(--line);overflow:auto}
+#map{min-height:420px;height:100%;background:var(--card)}
+label{display:block;font-size:14px;color:var(--mute);margin:10px 0 4px}
+.f{display:flex;gap:8px}
+input,button,select{font:inherit;font-size:16px;color:var(--ink)}
+input{width:100%;min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card)}
+button{min-height:44px;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);cursor:pointer;white-space:nowrap}
+button.main{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:600;width:100%;margin-top:14px}
+button.on{outline:2px solid var(--sun)}
+:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.results{display:grid;gap:4px;margin-top:6px}.results button{text-align:left;white-space:normal;font-size:15px}
+.hint{font-size:14px;color:var(--mute);margin:8px 0 0}
+#status{font-size:14px;color:var(--red);min-height:20px;margin:8px 0}
+.card{margin-top:16px;border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:12px;align-items:center}
+.big{font-size:34px}.big b{color:var(--red)}.big b.p{color:var(--blue)}
+#sub{color:var(--mute);font-size:15px;margin:6px 0 0}
+#bus{width:150px;height:150px}
+.meter{margin:8px 0}.meter .l{display:flex;justify-content:space-between;font-size:14px}.meter .l span:last-child{white-space:nowrap}
+.bar{height:8px;border-radius:4px;background:var(--card);overflow:hidden}.bar i{display:block;height:100%;transition:width .4s}
+input[type=range]{padding:0;background:none;border:0;accent-color:var(--sun)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--mute);margin-top:10px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.saved{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+#sunG{transform-origin:150px 150px;transition:transform .7s cubic-bezier(.3,.7,.3,1),opacity .4s}
+.halo{transform-box:fill-box;transform-origin:center;animation:halo 2.4s ease-out infinite}
+.rays line{animation:shimmer 1.8s ease-in-out infinite}.rays line:nth-child(2){animation-delay:.3s}.rays line:nth-child(3){animation-delay:.6s}
+.glow{transition:opacity .5s}#you{transition:transform .6s cubic-bezier(.3,.7,.3,1),opacity .3s}
+.pop{animation:pop .45s ease-out}
+@keyframes halo{from{transform:scale(1);opacity:.6}to{transform:scale(1.5);opacity:0}}
+@keyframes shimmer{0%,100%{opacity:.35}50%{opacity:.95}}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+footer{font-size:13px;color:var(--mute);margin-top:18px}
+@media(max-width:800px){main{grid-template-columns:minmax(0,1fr)}.panel{border-right:0}#map{height:60dvh}}
+@media(max-width:380px){.card{grid-template-columns:minmax(0,1fr)}#bus{margin:0 auto}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header><h1>Lado Sombra</h1><span>¿De qué lado me siento en la micro?</span></header>
+<main>
+<div class="panel">
+  <label for="from">Desde</label>
+  <div class="f"><input id="from" placeholder="Dirección o lugar" autocomplete="off"><button id="me">Mi ubicación</button></div>
+  <div class="results" id="rfrom"></div>
+  <label for="to">Hasta</label>
+  <div class="f"><input id="to" placeholder="Ej: Plaza de Maipú" autocomplete="off"><button id="swap" aria-label="Invertir desde y hasta">⇅</button></div>
+  <div class="results" id="rto"></div>
+  <p class="hint">También puedes tocar el mapa: <button id="pickFrom" class="on">marcar desde</button> <button id="pickTo">marcar hasta</button></p>
+  <div class="f">
+    <div style="flex:1"><label for="date">Fecha</label><input type="date" id="date"></div>
+    <div style="flex:1"><label for="time">Hora de salida</label><input type="time" id="time"></div>
+  </div>
+  <label for="slide">Desliza para cambiar la hora</label>
+  <input type="range" id="slide" min="300" max="1320" step="5">
+  <button class="main" id="go">Calcular ruta</button>
+  <div id="status" role="status"></div>
+
+  <div class="card">
+    <div><div class="big" id="verdict">Elige tu destino</div><p id="sub">Busca a dónde vas y te digo de qué lado sentarte.</p></div>
+    <svg id="bus" viewBox="0 0 300 300" role="img" aria-label="Micro vista desde arriba con la posición del sol"></svg>
+  </div>
+  <div id="meters"></div>
+  <div class="legend"><span><i class="dot" style="background:var(--red)"></i>Sol lado chofer</span><span><i class="dot" style="background:var(--blue)"></i>Sol lado puerta</span><span><i class="dot" style="background:var(--gray)"></i>Sin sol de lado</span></div>
+
+  <label for="rname">Guardar esta ruta</label>
+  <div class="f"><input id="rname" placeholder="Ej: casa → pega"><button id="save">Guardar</button></div>
+  <div class="saved" id="saved"></div>
+
+  <footer>Mapa © colaboradores de OpenStreetMap. Rutas: OSRM. Búsqueda: Nominatim. La ruta es la de un auto y el tiempo se ajusta a velocidad de micro (×1,5); los recorridos reales de las micros vienen en una próxima versión. "Lado chofer" = izquierdo.</footer>
+</div>
+<div id="map"></div>
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+{
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const BUS=1.5,R=Math.PI/180;
+const COL={chofer:"var(--red)",puerta:"var(--blue)",none:"var(--gray)"};
+const CSSCOL=k=>getComputedStyle(document.documentElement).getPropertyValue(k==="chofer"?"--red":k==="puerta"?"--blue":"--gray").trim();
+let st={from:null,to:null,date:"",time:"18:00"},saved=[],route=null,pick="from",layers=[],mk={};
+try{const s=JSON.parse(localStorage.getItem("ls-web")||"null");if(s)st=Object.assign(st,s);saved=JSON.parse(localStorage.getItem("ls-web-rutas")||"[]")}catch(e){}
+const persist=()=>{try{localStorage.setItem("ls-web",JSON.stringify(st));localStorage.setItem("ls-web-rutas",JSON.stringify(saved))}catch(e){}};
+const msg=t=>{$("status").textContent=t||""};
+
+// --- Hora de Chile ---
+function tzOff(ms){try{const p={};new Intl.DateTimeFormat("en-US",{timeZone:"America/Santiago",hourCycle:"h23",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}).formatToParts(new Date(ms)).forEach(x=>p[x.type]=x.value);return(Date.UTC(+p.year,p.month-1,+p.day,+p.hour,+p.minute)-ms)/60000}catch(e){return -180}}
+function toUTC(d,t){const[y,mo,da]=d.split("-").map(Number),[h,mi]=t.split(":").map(Number);const g=Date.UTC(y,mo-1,da,h,mi);let off=tzOff(g);off=tzOff(g-off*60000);return g-off*60000}
+function chileNow(){const d=new Date(Date.now()+tzOff(Date.now())*60000).toISOString();return[d.slice(0,10),d.slice(11,16)]}
+
+// --- Sol: azimut desde el norte (horario) y elevación, en grados ---
+function sun(ms,lat,lon){const n=ms/86400000+2440587.5-2451545;const L=(280.46+0.9856474*n)%360,g=(357.528+0.9856003*n)*R;const lam=(L+1.915*Math.sin(g)+0.02*Math.sin(2*g))*R,eps=(23.439-4e-7*n)*R;const ra=Math.atan2(Math.cos(eps)*Math.sin(lam),Math.cos(lam)),dec=Math.asin(Math.sin(eps)*Math.sin(lam));const H=((280.46061837+360.98564736629*n+lon)*R)-ra,f=lat*R;const el=Math.asin(Math.sin(f)*Math.sin(dec)+Math.cos(f)*Math.cos(dec)*Math.cos(H));const az=Math.atan2(-Math.sin(H)*Math.cos(dec),Math.sin(dec)*Math.cos(f)-Math.cos(dec)*Math.sin(f)*Math.cos(H));return{az:(az/R+360)%360,el:el/R}}
+function bearing(a,b){const f1=a[0]*R,f2=b[0]*R,dl=(b[1]-a[1])*R;return(Math.atan2(Math.sin(dl)*Math.cos(f2),Math.cos(f1)*Math.sin(f2)-Math.sin(f1)*Math.cos(f2)*Math.cos(dl))/R+360)%360}
+function dist(a,b){const dp=(b[0]-a[0])*R,dl=(b[1]-a[1])*R;const h=Math.sin(dp/2)**2+Math.cos(a[0]*R)*Math.cos(b[0]*R)*Math.sin(dl/2)**2;return 12742000*Math.asin(Math.sqrt(h))}
+function side(s,h){if(s.el<=0||s.el>=65)return"none";const r=(s.az-h+360)%360;if(r<20||r>340||(r>160&&r<200))return"none";return r<180?"puerta":"chofer"}
+
+// --- Mapa ---
+const map=L.map("map",{zoomControl:true}).setView([-33.45,-70.66],12);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(map);
+function setPoint(which,p){st[which]=p;$(which).value=p.name;if(mk[which])map.removeLayer(mk[which]);mk[which]=L.circleMarker([p.lat,p.lon],{radius:9,color:"#16181d",weight:3,fillColor:which==="from"?"#fff":"#16181d",fillOpacity:1}).addTo(map).bindTooltip(which==="from"?"Desde":"Hasta");persist()}
+map.on("click",e=>{const p={lat:e.latlng.lat,lon:e.latlng.lng,name:`Punto en el mapa (${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)})`};setPoint(pick,p);if(pick==="from"){pick="to";$("pickTo").classList.add("on");$("pickFrom").classList.remove("on")}if(st.from&&st.to)go()});
+$("pickFrom").onclick=()=>{pick="from";$("pickFrom").classList.add("on");$("pickTo").classList.remove("on")};
+$("pickTo").onclick=()=>{pick="to";$("pickTo").classList.add("on");$("pickFrom").classList.remove("on")};
+
+// --- Búsqueda de direcciones ---
+async function search(which){const q=$(which).value.trim();const box=$("r"+which);if(q.length<3){box.innerHTML="";return}
+msg("Buscando…");try{const r=await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=cl&accept-language=es&q=${encodeURIComponent(q)}`);const j=await r.json();msg(j.length?"":"No encontré ese lugar. Prueba con calle y comuna.");
+box.innerHTML=j.map((x,i)=>`<button data-i="${i}">${esc(x.display_name)}</button>`).join("");box.onclick=e=>{const i=e.target.dataset.i;if(i==null)return;const x=j[+i];setPoint(which,{lat:+x.lat,lon:+x.lon,name:x.display_name.split(",").slice(0,2).join(",")});box.innerHTML="";if(st.from&&st.to)go()}}catch(e){msg("No pude buscar. Revisa tu conexión.")}}
+const lastQ={};
+["from","to"].forEach(w=>{const run=()=>{const q=$(w).value.trim();if(q===lastQ[w]||(st[w]&&q===st[w].name))return;lastQ[w]=q;search(w)};$(w).addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();run()}});$(w).addEventListener("change",run)});
+$("me").onclick=()=>{if(!navigator.geolocation)return msg("Tu navegador no permite ubicación.");msg("Buscando tu ubicación…");navigator.geolocation.getCurrentPosition(p=>{msg("");setPoint("from",{lat:p.coords.latitude,lon:p.coords.longitude,name:"Mi ubicación"});map.setView([p.coords.latitude,p.coords.longitude],15);if(st.to)go()},()=>msg("No pude obtener tu ubicación. Revisa el permiso."),{enableHighAccuracy:true,timeout:10000})};
+$("swap").onclick=()=>{const f=st.from,t=st.to;if(t)setPoint("from",t);if(f)setPoint("to",f);if(st.from&&st.to)go()};
+
+// --- Ruta ---
+async function go(){if(!st.from||!st.to)return msg("Falta elegir desde y hasta.");msg("Trazando ruta…");
+try{const u=`https://router.project-osrm.org/route/v1/driving/${st.from.lon},${st.from.lat};${st.to.lon},${st.to.lat}?overview=full&geometries=geojson`;const j=await(await fetch(u)).json();if(!j.routes||!j.routes.length)throw 0;
+const r=j.routes[0];route={pts:r.geometry.coordinates.map(c=>[c[1],c[0]]),dur:r.duration*BUS};msg("");analyze(true)}catch(e){msg("No pude trazar la ruta. Intenta de nuevo en un rato.")}}
+$("go").onclick=go;
+
+let lastV="";
+function analyze(fit){if(!route)return;const t0=toUTC(st.date,st.time),P=route.pts;let total=0;const d=[];for(let i=1;i<P.length;i++){d.push(dist(P[i-1],P[i]));total+=d[i-1]}if(!total)return;
+let acc=0,runs=[],sum={chofer:0,puerta:0,none:0},vec={chofer:[0,0],puerta:[0,0]};
+for(let i=1;i<P.length;i++){const segMin=d[i-1]/total*route.dur/60,mid=t0+(acc+segMin/2)*60000;acc+=segMin;if(!d[i-1])continue;
+const h=bearing(P[i-1],P[i]),s=sun(mid,P[i][0],P[i][1]),k=side(s,h);sum[k]+=segMin;if(k!=="none"){const rel=(s.az-h+360)%360;vec[k][0]+=Math.cos(rel*R)*segMin;vec[k][1]+=Math.sin(rel*R)*segMin}
+const last=runs[runs.length-1];if(last&&last.k===k)last.pts.push(P[i]);else runs.push({k,pts:[P[i-1],P[i]]})}
+layers.forEach(l=>map.removeLayer(l));layers=runs.map(r=>L.polyline(r.pts,{color:CSSCOL(r.k),weight:7,opacity:.9,lineCap:"round"}).addTo(map));if(fit)map.fitBounds(L.latLngBounds(P),{padding:[30,30]});
+const tot=Math.round(route.dur/60)||1,ch=Math.round(sum.chofer),pu=Math.round(sum.puerta);let v,sub,rec=null;
+if(ch+pu===0){v="Da lo mismo";sub="En este viaje el sol no te pega de lado."}
+else if(Math.abs(ch-pu)<=tot*0.1){v="Está parejo";sub=`El sol pega ${ch} min en el lado chofer y ${pu} min en el lado puerta.`}
+else if(pu>ch){rec="chofer";v="Siéntate al <b>lado del chofer</b>";sub=`El sol pega en el lado puerta ${pu} de ~${tot} min.`}
+else{rec="puerta";v='Siéntate al <b class="p">lado de la puerta</b>';sub=`El sol pega en el lado chofer ${ch} de ~${tot} min.`}
+const vd=$("verdict");vd.innerHTML=v;$("sub").textContent=sub;if(v!==lastV){vd.classList.remove("pop");void vd.offsetWidth;vd.classList.add("pop");lastV=v}
+const m=(l,x,c)=>`<div class="meter"><div class="l"><span>${l}</span><span>${x} min</span></div><div class="bar"><i style="width:${Math.min(100,x/tot*100)}%;background:${c}"></i></div></div>`;
+$("meters").innerHTML=m("Sol en el lado chofer",ch,COL.chofer)+m("Sol en el lado puerta",pu,COL.puerta);
+const domK=ch+pu?(pu>ch?"puerta":"chofer"):null;drawBus(rec,domK?{side:domK,rel:(Math.atan2(vec[domK][1],vec[domK][0])/R+360)%360}:null)}
+
+// --- Micro animada ---
+function initBus(){let seats="";for(let r=0;r<6;r++){const y=118+r*19;seats+=`<rect x="114" y="${y}" width="22" height="14" rx="3" fill="var(--line)"/><rect x="164" y="${y}" width="22" height="14" rx="3" fill="var(--line)"/>`}
+let rays="";for(let k=-1;k<=1;k++){const b=Math.PI/2+k*0.28;rays+=`<line x1="${150+Math.cos(b)*22}" y1="${32+Math.sin(b)*22}" x2="${150+Math.cos(b)*62}" y2="${32+Math.sin(b)*62}" stroke="var(--sun)" stroke-width="4" stroke-linecap="round"/>`}
+$("bus").innerHTML=`<g id="sunG" style="opacity:0"><g class="rays">${rays}</g><circle class="halo" cx="150" cy="32" r="20" fill="none" stroke="var(--sun)" stroke-width="3"/><circle cx="150" cy="32" r="17" fill="var(--sun)"/></g><rect x="104" y="58" width="92" height="184" rx="18" fill="var(--card)" stroke="var(--ink)" stroke-width="3"/><path d="M114 66h72l-6 16h-60z" fill="var(--ink)" opacity=".75"/><rect id="glowL" class="glow" x="98" y="62" width="12" height="176" rx="6" fill="var(--sun)" style="opacity:0"/><rect id="glowR" class="glow" x="190" y="62" width="12" height="176" rx="6" fill="var(--sun)" style="opacity:0"/><rect x="114" y="90" width="20" height="16" rx="4" fill="var(--red)"/><rect x="196" y="92" width="5" height="28" fill="var(--blue)"/>${seats}<g id="you" style="opacity:0"><rect x="112" y="154" width="26" height="18" rx="4" fill="var(--ink)"/><text x="125" y="167" text-anchor="middle" font-size="11" font-weight="600" fill="var(--bg)" font-family="Barlow">TÚ</text></g>`}
+let sunAng=null;
+function drawBus(rec,dom){const g=$("sunG");if(dom){sunAng=sunAng==null?dom.rel:sunAng+(((dom.rel-sunAng)%360+540)%360-180);g.style.transform=`rotate(${sunAng}deg)`;g.style.opacity=1}else g.style.opacity=0;
+$("glowL").style.opacity=dom&&dom.side==="chofer"?.85:0;$("glowR").style.opacity=dom&&dom.side==="puerta"?.85:0;const y=$("you");y.style.opacity=rec?1:0;if(rec)y.style.transform=rec==="puerta"?"translateX(50px)":"none"}
+
+// --- Hora y rutas guardadas ---
+const syncTime=()=>{$("date").value=st.date;$("time").value=st.time;const[h,m]=st.time.split(":").map(Number);$("slide").value=h*60+m};
+$("date").onchange=e=>{if(e.target.value){st.date=e.target.value;persist();analyze()}};
+$("time").onchange=e=>{if(e.target.value){st.time=e.target.value;syncTime();persist();analyze()}};
+$("slide").oninput=e=>{const v=+e.target.value;st.time=String(Math.floor(v/60)).padStart(2,"0")+":"+String(v%60).padStart(2,"0");$("time").value=st.time;analyze()};
+$("slide").onchange=persist;
+function drawSaved(){$("saved").innerHTML=saved.map((r,i)=>`<button data-load="${i}">${esc(r.name)}</button><button data-rm="${i}" aria-label="Borrar ${esc(r.name)}">×</button>`).join("")}
+$("save").onclick=()=>{if(!st.from||!st.to)return msg("Primero elige desde y hasta.");saved.push({name:$("rname").value.trim()||`Ruta ${saved.length+1}`,from:st.from,to:st.to,time:st.time});$("rname").value="";drawSaved();persist()};
+$("saved").onclick=e=>{const l=e.target.dataset.load,r=e.target.dataset.rm;if(l!=null){const x=saved[+l];setPoint("from",x.from);setPoint("to",x.to);st.time=x.time;syncTime();go()}else if(r!=null){saved.splice(+r,1);drawSaved();persist()}};
+
+if(!st.date)st.date=chileNow()[0];
+initBus();syncTime();drawSaved();
+if(st.from)setPoint("from",st.from);if(st.to)setPoint("to",st.to);if(st.from&&st.to)go();
+}
+</script>
+</body>
+</html>
