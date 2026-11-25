@@ -123,3 +123,8 @@ export function describeVerdict(a: Analysis, mode: TravelMode = 'micro'): Verdic
     hint: 'Si puedes, elige calles con árboles.',
   }
 }
+
+/** El titular en una línea, por ejemplo "Siéntate al lado del chofer". */
+export function headline(t: Pick<VerdictText, 'lead' | 'emphasis'>): string {
+  return t.emphasis ? `${t.lead} ${t.emphasis}` : t.lead
+}

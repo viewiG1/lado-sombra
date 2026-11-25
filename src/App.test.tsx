@@ -239,3 +239,19 @@ describe('App: mejor hora para salir', () => {
     expect(screen.getByLabelText('Salida')).toHaveValue(time)
   }, 10000)
 })
+
+describe('App: enlace compartido', () => {
+  test('abre el viaje del enlace, sin cambiar tu modo guardado, y limpia la dirección', async () => {
+    localStorage.setItem('lado-sombra:modo', 'micro')
+    window.history.replaceState(null, '', '/?de=-33.4378,-70.6506&den=Plaza%20de%20Armas&a=-33.4648,-70.6506&an=Destino%20Sur&hora=18:00&modo=pie')
+    render(<App />)
+    expect(screen.getByLabelText('Desde')).toHaveValue('Plaza de Armas')
+    expect(screen.getByLabelText('Hasta')).toHaveValue('Destino Sur')
+    expect(screen.getByLabelText('Salida')).toHaveValue('18:00')
+    expect(screen.getByRole('button', { name: 'Caminando', pressed: true })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /Camina por la vereda/ }, { timeout: 3000 })).toBeInTheDocument()
+    expect(window.location.search).toBe('')
+    expect(localStorage.getItem('lado-sombra:modo')).toBe('micro')
+    expect(screen.getByRole('button', { name: /Compartir este viaje/ })).toBeInTheDocument()
+  })
+})

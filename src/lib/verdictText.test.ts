@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import type { Analysis, NoSideReason } from './analyze'
-import { describeVerdict } from './verdictText'
+import { describeVerdict, headline } from './verdictText'
 
 function analysis(partial: Pick<Analysis, 'minutes' | 'totalMinutes' | 'verdict'> & { reasons?: Partial<Record<NoSideReason, number>> }): Analysis {
   return {
@@ -133,5 +133,12 @@ describe('describeVerdict en bici', () => {
   test('la micro no avisa del sol en la cara (no vas manejando)', () => {
     const t = describeVerdict({ ...analysis({ minutes: { chofer: 0, puerta: 0, none: 10 }, totalMinutes: 10, verdict: { kind: 'da-lo-mismo' }, reasons: { frente: 10 } }), glareMinutes: 9 })
     expect(t.warning).toBeNull()
+  })
+})
+
+describe('headline', () => {
+  test('une el comienzo y el énfasis', () => {
+    expect(headline({ lead: 'Siéntate al', emphasis: 'lado del chofer' })).toBe('Siéntate al lado del chofer')
+    expect(headline({ lead: 'Da lo mismo', emphasis: null })).toBe('Da lo mismo')
   })
 })

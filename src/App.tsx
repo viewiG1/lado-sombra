@@ -4,6 +4,7 @@ import { Credits } from './components/Credits'
 import { LocateIcon, Spinner, SwapIcon } from './components/icons'
 import { MapPanel, type PickTarget } from './components/MapPanel'
 import { ModeSwitch } from './components/ModeSwitch'
+import { ShareButton } from './components/ShareButton'
 import { SearchBox } from './components/SearchBox'
 import { TimeControls } from './components/TimeControls'
 import { UvCard } from './components/UvCard'
@@ -20,10 +21,12 @@ import { departureProfile, exposureMinutes, suggestDeparture } from './lib/bestT
 import { errorMessage } from './lib/errors'
 import type { Favorite } from './lib/favorites'
 import { MODES, isTravelMode, type TravelMode } from './lib/modes'
+import { paramsToTrip } from './lib/shareLink'
 import type { LatLon, Place } from './lib/place'
 import { sunTimes } from './lib/sun'
 import { chileNow, chileToUtc } from './lib/time'
 import { uvForTrip } from './lib/uv'
+import { describeVerdict, headline } from './lib/verdictText'
 import { createNominatimGeocoder } from './services/geocoding'
 import { createOsrmProvider, type RoutingProvider } from './services/routing'
 import { createOpenMeteoUv } from './services/uv'
@@ -50,13 +53,15 @@ const TAGLINE: Record<TravelMode, string> = {
 }
 
 export default function App() {
-  // La app abre en el último modo usado (micro la primera vez).
-  const [savedMode, setSavedMode] = useStoredChoice('lado-sombra:modo', isTravelMode)
+  // Un enlace compartido (?de=…&a=…&hora=…&modo=…) abre ese viaje.
+  const [shared] = useState(() => paramsToTrip(window.location.search))
+  // Si no, la app abre en el último modo usado (micro la primera vez).
+  const [savedMode, setSavedMode] = useStoredChoice('lado-sombra:modo', isTravelMode, shared.mode)
   const mode: TravelMode = savedMode ?? 'micro'
   const [mapChoice, setMapChoice] = useStoredChoice('lado-sombra:mapa', isMapChoice)
-  const [from, setFrom] = useState<Place | null>(null)
-  const [to, setTo] = useState<Place | null>(null)
-  const [{ date, time }, setWhen] = useState(() => chileNow())
+  const [from, setFrom] = useState<Place | null>(shared.from ?? null)
+  const [to, setTo] = useState<Place | null>(shared.to ?? null)
+  const [{ date, time }, setWhen] = useState(() => ({ date: chileNow().date, time: shared.time ?? chileNow().time }))
   const [pick, setPick] = useState<PickTarget>('from')
   const [gpsMessage, setGpsMessage] = useState<string | null>(null)
 
@@ -66,6 +71,11 @@ export default function App() {
   const route = useRoute(from, to, routing[mode])
   const { locate, loading: locating } = useGeolocation()
   const favs = useFavorites()
+
+  // Ya leído el enlace compartido, se limpia la dirección (recargar no vuelve a imponerlo).
+  useEffect(() => {
+    if (window.location.search) window.history.replaceState(null, '', window.location.pathname)
+  }, [])
 
   // Si ya diste permiso de ubicación antes, la app parte desde donde estás (sin volver a preguntar).
   useEffect(() => {
@@ -235,6 +245,16 @@ export default function App() {
           </div>
 
           {card}
+
+          {from && to && analysis && (
+            <ShareButton
+              from={from}
+              to={to}
+              time={time}
+              mode={mode}
+              summary={headline(describeVerdict(analysis, mode))}
+            />
+          )}
 
           {tripUv && <UvCard uv={tripUv} mode={mode} hasTrip={analysis !== null} loading={uvData.loading} />}
 
