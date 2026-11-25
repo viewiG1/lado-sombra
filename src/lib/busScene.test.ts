@@ -34,10 +34,8 @@ describe('busScene', () => {
     expect(Math.hypot(s.shadow!.dx, s.shadow!.dy)).toBeLessThan(8)
   })
 
-  test('el sol se acerca al techo a medida que sube', () => {
-    const d = [30, 45, 55, 64].map((el) => busScene({ sun: sun(90, el), lit: 'puerta' }).sun!.distance)
-    for (let i = 1; i < d.length; i++) expect(d[i]!).toBeLessThanOrEqual(d[i - 1]!)
-    expect(d[0]).toBe(ORBIT)
+  test('mientras pegue de lado, el sol queda afuera de la micro aunque esté alto (no parece estar adentro)', () => {
+    for (const el of [30, 45, 55, 64]) expect(busScene({ sun: sun(90, el), lit: 'puerta' }).sun!.distance).toBe(ORBIT)
   })
 
   test('sol bajo → sombra larga; sol alto → sombra corta', () => {

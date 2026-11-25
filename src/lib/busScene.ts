@@ -1,12 +1,10 @@
 import type { SunSide, SunSummary } from './analyze'
-import { MAX_SIDE_ELEVATION, sunSituation, type Situation } from './sun'
+import { sunSituation, type Situation } from './sun'
 
 /** Coordenadas del dibujo de la micro (viewBox 0 0 320 320), con el frente hacia arriba. */
 export const CENTER = 160
-/** Distancia del sol al centro cuando está bajo. */
+/** Distancia del sol al centro (órbita). Solo con el sol "alto" pasa encima del techo. */
 export const ORBIT = 132
-/** Desde esta elevación el sol empieza a acercarse al techo; a MAX_SIDE_ELEVATION queda encima. */
-const CLIMB_FROM = 40
 const MAX_SHADOW = 48
 const MIN_SHADOW = 4
 
@@ -25,8 +23,8 @@ export function busScene({ sun, lit }: { sun: SunSummary | null; lit: SunSide | 
   if (!sun || sun.elevation <= 0) return { situation: lit ?? 'noche', sun: null, shadow: null }
 
   const situation = lit ?? sunSituation({ azimuth: sun.relAngle, elevation: sun.elevation }, 0)
-  const climb = clamp((sun.elevation - CLIMB_FROM) / (MAX_SIDE_ELEVATION - CLIMB_FROM), 0, 1)
-  const distance = ORBIT * (1 - climb)
+  // Mientras pegue de lado (< 65°) el sol se dibuja afuera; si va alto, encima del techo.
+  const distance = situation === 'alto' ? 0 : ORBIT
   const sin = Math.sin(sun.relAngle * RAD)
   const cos = Math.cos(sun.relAngle * RAD)
   // Largo de la sombra de un cuerpo de altura fija: crece cuando el sol baja.
