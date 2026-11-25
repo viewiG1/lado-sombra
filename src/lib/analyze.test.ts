@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { analyzeRoute, verdictFor, type Route } from './analyze'
+import { analyzePrepared, analyzeRoute, prepareRoute, verdictFor, type Route } from './analyze'
 import type { LngLat } from './geo'
 import { chileToUtc } from './time'
 
@@ -197,5 +197,20 @@ describe('analyzeRoute: sol bajo en la cara', () => {
   test('de espalda al sol o con el sol alto no encandila', () => {
     expect(analyzeRoute(route(east, 600), chileToUtc('2026-11-24', '19:00')).glareMinutes).toBe(0)
     expect(analyzeRoute(route(west, 600), chileToUtc('2026-12-21', '13:40')).glareMinutes).toBe(0)
+  })
+})
+
+describe('prepareRoute + analyzePrepared', () => {
+  test('preparar una vez y evaluar a otra hora da lo mismo que analizar de cero', () => {
+    const r = route(straight(START, 3, -1), 600)
+    const prepared = prepareRoute(r)
+    for (const t of ['08:00', '13:40', '18:00', '23:00']) {
+      const dep = chileToUtc('2026-11-24', t)
+      expect(analyzePrepared(prepared, dep)).toEqual(analyzeRoute(r, dep))
+    }
+  })
+
+  test('la ruta preparada trae los minutos totales con el factor aplicado', () => {
+    expect(prepareRoute(route(straight(START, 3, -1), 600), { busFactor: 2 }).totalMinutes).toBeCloseTo(20, 6)
   })
 })

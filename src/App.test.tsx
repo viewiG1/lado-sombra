@@ -222,3 +222,20 @@ describe('App: modos, UV y mapa', () => {
     expect(localStorage.getItem('lado-sombra:mapa')).toBe(before === 'true' ? 'claro' : 'oscuro')
   })
 })
+
+describe('App: mejor hora para salir', () => {
+  test('sugiere una hora cercana con menos sol de lado y el botón la aplica', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await pickMode(user, /^Micro$/)
+    setDateTime('2026-11-24', '15:00')
+    await searchAndPick(user, 'Desde', 'plaza de armas', 'Plaza de Armas')
+    await searchAndPick(user, 'Hasta', 'destino sur', 'Destino Sur')
+
+    expect(await screen.findByRole('img', { name: /Menos sol saliendo a las/ })).toBeInTheDocument()
+    const suggest = await screen.findByRole('button', { name: /^Sal a las (1[34]):\d\d: \d+ min de sol de lado/ })
+    const time = /Sal a las (\d\d:\d\d)/.exec(suggest.textContent ?? '')![1]
+    await user.click(suggest)
+    expect(screen.getByLabelText('Salida')).toHaveValue(time)
+  }, 10000)
+})

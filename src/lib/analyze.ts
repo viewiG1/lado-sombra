@@ -90,29 +90,62 @@ function segmentDurations(route: Route): number[] {
   return lengths.map((l) => (total > 0 ? (l / total) * route.durationS : 0))
 }
 
-export function analyzeRoute(route: Route, departureUtcMs: number, options: AnalyzeOptions = {}): Analysis {
+/** Tramo listo para evaluar a cualquier hora: rumbo, punto medio y cuándo pasa la micro (min desde la salida). */
+export interface PreparedPiece {
+  from: LngLat
+  to: LngLat
+  mid: LngLat
+  heading: number
+  /** Minutos desde la salida hasta la mitad del tramo. */
+  midMin: number
+  minutes: number
+}
+
+export interface PreparedRoute {
+  pieces: PreparedPiece[]
+  totalMinutes: number
+}
+
+/** Divide la ruta en tramos y calcula rumbos y tiempos. No depende de la hora: se hace una vez por ruta. */
+export function prepareRoute(route: Route, options: AnalyzeOptions = {}): PreparedRoute {
   const busFactor = options.busFactor ?? BUS_TIME_FACTOR
   const pieceLengthM = options.pieceLengthM ?? PIECE_LENGTH_M
   if (!Number.isFinite(route.durationS) || route.durationS < 0) throw new RangeError('Duración de ruta inválida')
-  if (!Number.isFinite(departureUtcMs)) throw new RangeError('Hora de salida inválida')
   if (!(busFactor > 0)) throw new RangeError('El factor micro debe ser positivo')
 
-  const pieces = resample(route.coords, segmentDurations(route), pieceLengthM)
+  let elapsed = 0
+  const pieces = resample(route.coords, segmentDurations(route), pieceLengthM).map((p): PreparedPiece => {
+    const minutes = (p.durationS * busFactor) / 60
+    const midMin = elapsed + minutes / 2
+    elapsed += minutes
+    return {
+      from: p.from,
+      to: p.to,
+      mid: [(p.from[0] + p.to[0]) / 2, (p.from[1] + p.to[1]) / 2],
+      heading: bearing(p.from, p.to),
+      midMin,
+      minutes,
+    }
+  })
+  return { pieces, totalMinutes: elapsed }
+}
+
+export function analyzeRoute(route: Route, departureUtcMs: number, options: AnalyzeOptions = {}): Analysis {
+  return analyzePrepared(prepareRoute(route, options), departureUtcMs)
+}
+
+/** Dónde pega el sol en cada tramo, saliendo a esa hora. */
+export function analyzePrepared(prepared: PreparedRoute, departureUtcMs: number): Analysis {
+  if (!Number.isFinite(departureUtcMs)) throw new RangeError('Hora de salida inválida')
   const minutes: Record<Side, number> = { chofer: 0, puerta: 0, none: 0 }
   const reasons: Record<NoSideReason, number> = { frente: 0, atras: 0, alto: 0, noche: 0 }
   const bySide: Record<SunSide, SunAverage> = { chofer: new SunAverage(), puerta: new SunAverage() }
   const sky = new SunAverage()
   let glareMinutes = 0
   const runs: Run[] = []
-  let elapsedMin = 0
-
-  for (const p of pieces) {
-    const pieceMin = (p.durationS * busFactor) / 60
-    const midTime = departureUtcMs + (elapsedMin + pieceMin / 2) * 60000
-    elapsedMin += pieceMin
-    const heading = bearing(p.from, p.to)
-    const mid: LngLat = [(p.from[0] + p.to[0]) / 2, (p.from[1] + p.to[1]) / 2]
-    const sun = sunPosition(midTime, mid[1], mid[0])
+  for (const p of prepared.pieces) {
+    const { heading, minutes: pieceMin } = p
+    const sun = sunPosition(departureUtcMs + p.midMin * 60000, p.mid[1], p.mid[0])
     const situation = sunSituation(sun, heading)
     const rel = relativeAngle(sun.azimuth, heading)
     let side: Side
@@ -146,8 +179,8 @@ export function analyzeRoute(route: Route, departureUtcMs: number, options: Anal
   return {
     runs,
     minutes,
-    totalMinutes: elapsedMin,
-    verdict: verdictFor(minutes, elapsedMin),
+    totalMinutes: prepared.totalMinutes,
+    verdict: verdictFor(minutes, prepared.totalMinutes),
     glareMinutes,
     reasons,
     dominant,

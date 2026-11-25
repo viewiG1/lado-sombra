@@ -56,3 +56,43 @@ describe('TimeControls', () => {
     expect(onNow).toHaveBeenCalled()
   })
 })
+
+describe('TimeControls con la ruta: sol según la hora de salida', () => {
+  const profile = [
+    { time: '17:00', minutes: 2 },
+    { time: '17:10', minutes: 8 },
+    { time: '18:00', minutes: 14 },
+  ]
+
+  test('muestra la franja y su resumen para lectores de pantalla', () => {
+    render(
+      <TimeControls date="2026-11-24" time="18:00" sun={null} profile={profile} suggestion={null} metric="de sol de lado" onDateChange={vi.fn()} onTimeChange={vi.fn()} onNow={vi.fn()} />,
+    )
+    expect(screen.getByRole('img', { name: /Menos sol saliendo a las 17:00 \(2 min de sol de lado\).*más sol a las 18:00 \(14 min\)/ })).toBeInTheDocument()
+  })
+
+  test('el botón de la sugerencia cambia la hora', () => {
+    const onTimeChange = vi.fn()
+    render(
+      <TimeControls
+        date="2026-11-24"
+        time="18:00"
+        sun={null}
+        profile={profile}
+        suggestion={{ time: '17:00', minutes: 2, saving: 12 }}
+        metric="de sol de lado"
+        onDateChange={vi.fn()}
+        onTimeChange={onTimeChange}
+        onNow={vi.fn()}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Sal a las 17:00: 2 min de sol de lado \(12 menos\)/ }))
+    expect(onTimeChange).toHaveBeenCalledWith('17:00')
+  })
+
+  test('sin ruta no hay franja ni sugerencia', () => {
+    render(<TimeControls date="2026-11-24" time="18:00" sun={null} onDateChange={vi.fn()} onTimeChange={vi.fn()} onNow={vi.fn()} />)
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Sal a las/ })).not.toBeInTheDocument()
+  })
+})

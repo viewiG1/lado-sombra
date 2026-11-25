@@ -15,7 +15,8 @@ import { useOnline, usePrefersDark } from './hooks/useMediaQuery'
 import { useRoute } from './hooks/useRoute'
 import { useStoredChoice } from './hooks/useStoredChoice'
 import { useUv } from './hooks/useUv'
-import { analyzeRoute, type Analysis } from './lib/analyze'
+import { analyzePrepared, prepareRoute, type Analysis } from './lib/analyze'
+import { departureProfile, exposureMinutes, suggestDeparture } from './lib/bestTime'
 import { errorMessage } from './lib/errors'
 import type { Favorite } from './lib/favorites'
 import { MODES, isTravelMode, type TravelMode } from './lib/modes'
@@ -97,14 +98,27 @@ export default function App() {
   const daylight = useMemo(() => sunTimes(date, hereLat, hereLon), [date, hereLat, hereLon])
   const uvData = useUv(uvProvider, hereLat, hereLon, date)
 
-  const analysis: Analysis | null = useMemo(() => {
-    if (!route.route || deferredDeparture === null) return null
+  // La ruta se divide en tramos una sola vez; mover la hora solo recalcula el sol.
+  const prepared = useMemo(() => {
+    if (!route.route) return null
     try {
-      return analyzeRoute(route.route, deferredDeparture, { busFactor: MODES[mode].timeFactor })
+      return prepareRoute(route.route, { busFactor: MODES[mode].timeFactor })
     } catch {
       return null
     }
-  }, [route.route, deferredDeparture, mode])
+  }, [route.route, mode])
+
+  const analysis: Analysis | null = useMemo(
+    () => (prepared && deferredDeparture !== null ? analyzePrepared(prepared, deferredDeparture) : null),
+    [prepared, deferredDeparture],
+  )
+
+  // Sol según la hora de salida (franja sobre el deslizador) y la mejor hora cercana.
+  const profile = useMemo(() => (prepared ? departureProfile(prepared, date, mode) : []), [prepared, date, mode])
+  const suggestion = useMemo(() => {
+    if (!prepared || deferredDeparture === null) return null
+    return suggestDeparture(profile, time, exposureMinutes(prepared, deferredDeparture, mode))
+  }, [prepared, deferredDeparture, profile, time, mode])
 
   const tripUv = useMemo(
     () =>
@@ -231,6 +245,9 @@ export default function App() {
             onDateChange={(d) => setWhen((w) => ({ ...w, date: d }))}
             onTimeChange={(t) => setWhen((w) => ({ ...w, time: t }))}
             onNow={() => setWhen(chileNow())}
+            profile={profile}
+            suggestion={suggestion}
+            metric={mode === 'micro' ? 'de sol de lado' : 'de sol fuerte'}
           />
 
           <Favorites
