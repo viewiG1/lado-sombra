@@ -50,3 +50,12 @@ describe('TripTimeline', () => {
     expect(screen.getByRole('img', { name: /Salida 08:00.*llegada cerca de las 08:10/ })).toBeInTheDocument()
   })
 })
+
+describe('TripTimeline con viajes largos', () => {
+  test('muestra horas y minutos', () => {
+    render(<TripTimeline departure="09:55" totalMinutes={169} minutes={{ chofer: 97, puerta: 3, none: 69 }} runs={[run('chofer', 97), run('none', 72)]} mode="pie" />)
+    expect(screen.getByText('Sol a tu izquierda').closest('li')).toHaveTextContent('1 h 37 min')
+    expect(screen.getByText('Sin sol de lado').closest('li')).toHaveTextContent('1 h 9 min')
+    expect(screen.getByText('Llegada ~12:44')).toBeInTheDocument()
+  })
+})

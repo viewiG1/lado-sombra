@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react'
 import { SLIDER } from '../config'
 import { hhmmToMinutes, minutesToHhmm } from '../lib/time'
 import type { ProfilePoint, Suggestion } from '../lib/bestTime'
+import { formatDuration } from '../lib/format'
 import { dayTrack } from '../lib/timeline'
 
 interface Props {
@@ -28,13 +29,12 @@ function SunStrip({ profile, metric }: { profile: ProfilePoint[]; metric: string
   if (max <= 0) return null
   const least = profile.reduce((a, b) => (b.minutes < a.minutes ? b : a))
   const most = profile.reduce((a, b) => (b.minutes > a.minutes ? b : a))
-  const r = Math.round
   return (
     <div className="mx-[15px]">
       <div className="mb-1 text-xs text-mute">Sol durante el viaje según la hora de salida</div>
       <div
         role="img"
-        aria-label={`Menos sol saliendo a las ${least.time} (${r(least.minutes)} min ${metric}); más sol a las ${most.time} (${r(most.minutes)} min).`}
+        aria-label={`Menos sol saliendo a las ${least.time} (${formatDuration(least.minutes)} ${metric}); más sol a las ${most.time} (${formatDuration(most.minutes)}).`}
         className="flex h-3 overflow-hidden rounded-full bg-card"
       >
         {profile.map((p) => (
@@ -97,7 +97,7 @@ export function TimeControls({ date, time, sun, onDateChange, onTimeChange, onNo
           className="min-h-11 rounded-xl border border-sun bg-sun/15 px-3 py-2 text-left text-sm font-medium hover:bg-sun/25"
         >
           <span aria-hidden="true">☀️ </span>
-          Sal a las {suggestion.time}: {Math.round(suggestion.minutes)} min {metric} ({Math.round(suggestion.saving)} menos)
+          Sal a las {suggestion.time}: {formatDuration(suggestion.minutes)} {metric} ({formatDuration(suggestion.saving)} menos)
         </button>
       )}
 

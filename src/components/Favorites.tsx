@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { MAX_NAME_LENGTH, type Favorite } from '../lib/favorites'
 import { MODES } from '../lib/modes'
 import { CloseIcon, StarIcon } from './icons'
@@ -10,16 +10,18 @@ interface Props {
   onSave: (name: string) => void
   onLoad: (fav: Favorite) => void
   onRemove: (id: string) => void
+  /** Botón para compartir el viaje actual (si hay uno). */
+  share?: ReactNode
 }
 
-export function Favorites({ favorites, canSave, saveFailed, onSave, onLoad, onRemove }: Props) {
+export function Favorites({ favorites, canSave, saveFailed, onSave, onLoad, onRemove, share }: Props) {
   const [name, setName] = useState('')
   const [notice, setNotice] = useState<string | null>(null)
 
   return (
     <section aria-labelledby="fav-title" className="grid gap-3">
       <h2 id="fav-title" className="font-display text-2xl font-bold">
-        Rutas guardadas
+        Guardar y compartir
       </h2>
 
       <form
@@ -60,6 +62,8 @@ export function Favorites({ favorites, canSave, saveFailed, onSave, onLoad, onRe
           {saveFailed ? 'Tu navegador no dejó guardar: la ruta se perderá al cerrar la app.' : notice}
         </p>
       </form>
+
+      {share}
 
       {favorites.length === 0 ? (
         <p className="text-sm text-mute">Guarda los viajes que haces seguido y cárgalos con un toque.</p>

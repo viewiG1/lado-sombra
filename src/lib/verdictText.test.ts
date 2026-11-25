@@ -21,7 +21,7 @@ describe('describeVerdict', () => {
     expect(t.lead).toBe('Siéntate al')
     expect(t.emphasis).toBe('lado del chofer')
     expect(t.side).toBe('chofer')
-    expect(t.detail).toBe('El sol pega en el lado puerta 12 de ~25 min.')
+    expect(t.detail).toBe('El sol pega en el lado puerta 12 min de ~25 min.')
     expect(t.hint).toMatch(/izquierdo/)
   })
 
@@ -30,7 +30,7 @@ describe('describeVerdict', () => {
       analysis({ minutes: { chofer: 9.6, puerta: 1, none: 0 }, totalMinutes: 10.6, verdict: { kind: 'sentarse', side: 'puerta' } }),
     )
     expect(t.emphasis).toBe('lado de la puerta')
-    expect(t.detail).toBe('El sol pega en el lado chofer 10 de ~11 min.')
+    expect(t.detail).toBe('El sol pega en el lado chofer 10 min de ~11 min.')
     expect(t.hint).toMatch(/derecho/)
   })
 
@@ -60,7 +60,7 @@ describe('describeVerdict', () => {
     const t = describeVerdict(
       analysis({ minutes: { chofer: 0, puerta: 0.3, none: 0 }, totalMinutes: 0.3, verdict: { kind: 'sentarse', side: 'chofer' } }),
     )
-    expect(t.detail).toBe('El sol pega en el lado puerta 0 de ~1 min.')
+    expect(t.detail).toBe('El sol pega en el lado puerta 0 min de ~1 min.')
   })
 })
 
@@ -74,7 +74,7 @@ describe('describeVerdict a pie', () => {
     expect(t.lead).toBe('Camina por la vereda de la')
     expect(t.emphasis).toBe('derecha')
     expect(t.side).toBe('puerta')
-    expect(t.detail).toMatch(/derecha 14 de ~20 min/)
+    expect(t.detail).toMatch(/derecha 14 min de ~20 min/)
     expect(t.detail).toMatch(/edificios/)
   })
 
@@ -119,7 +119,7 @@ describe('describeVerdict en bici', () => {
     )
     expect(t.lead).toBe('El sol te pega por la')
     expect(t.emphasis).toBe('derecha')
-    expect(t.detail).toBe('14 de ~20 min en bici.')
+    expect(t.detail).toBe('14 min de ~20 min en bici.')
   })
 
   test('sin sol de lado: el titular dice dónde va el sol', () => {
@@ -140,5 +140,15 @@ describe('headline', () => {
   test('une el comienzo y el énfasis', () => {
     expect(headline({ lead: 'Siéntate al', emphasis: 'lado del chofer' })).toBe('Siéntate al lado del chofer')
     expect(headline({ lead: 'Da lo mismo', emphasis: null })).toBe('Da lo mismo')
+  })
+})
+
+describe('describeVerdict con viajes largos', () => {
+  test('usa horas y minutos', () => {
+    const t = describeVerdict(
+      analysis({ minutes: { chofer: 103, puerta: 2, none: 93 }, totalMinutes: 198, verdict: { kind: 'sentarse', side: 'puerta' } }),
+      'pie',
+    )
+    expect(t.detail).toMatch(/^El sol viene de tu izquierda 1 h 43 min de ~3 h 18 min:/)
   })
 })

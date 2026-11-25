@@ -246,17 +246,7 @@ export default function App() {
 
           {card}
 
-          {from && to && analysis && (
-            <ShareButton
-              from={from}
-              to={to}
-              time={time}
-              mode={mode}
-              summary={headline(describeVerdict(analysis, mode))}
-            />
-          )}
 
-          {tripUv && <UvCard uv={tripUv} mode={mode} hasTrip={analysis !== null} loading={uvData.loading} />}
 
           <TimeControls
             sun={daylight}
@@ -270,6 +260,8 @@ export default function App() {
             metric={mode === 'micro' ? 'de sol de lado' : 'de sol fuerte'}
           />
 
+          {tripUv && <UvCard uv={tripUv} mode={mode} hasTrip={analysis !== null} loading={uvData.loading} />}
+
           <Favorites
             favorites={favs.favorites}
             canSave={Boolean(from && to)}
@@ -277,6 +269,11 @@ export default function App() {
             onSave={(name) => from && to && favs.add({ name, from, to, time, mode })}
             onLoad={loadFavorite}
             onRemove={favs.remove}
+            share={
+              from && to && analysis ? (
+                <ShareButton from={from} to={to} time={time} mode={mode} summary={headline(describeVerdict(analysis, mode))} />
+              ) : null
+            }
           />
 
           <Credits mode={mode} />

@@ -86,7 +86,7 @@ describe('TimeControls con la ruta: sol según la hora de salida', () => {
         onNow={vi.fn()}
       />,
     )
-    fireEvent.click(screen.getByRole('button', { name: /Sal a las 17:00: 2 min de sol de lado \(12 menos\)/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Sal a las 17:00: 2 min de sol de lado \(12 min menos\)/ }))
     expect(onTimeChange).toHaveBeenCalledWith('17:00')
   })
 

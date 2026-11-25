@@ -1,6 +1,7 @@
 import type { Run } from '../lib/analyze'
 import type { TravelMode } from '../lib/modes'
 import type { Side } from '../lib/sun'
+import { formatDuration } from '../lib/format'
 import { arrivalTime } from '../lib/timeline'
 
 interface Props {
@@ -21,9 +22,8 @@ const LABEL: Record<'micro' | 'otro', Record<Side, string>> = {
 export function TripTimeline({ departure, totalMinutes, minutes, runs, mode = 'micro' }: Props) {
   const labels = LABEL[mode === 'micro' ? 'micro' : 'otro']
   const arrival = arrivalTime(departure, totalMinutes)
-  const round = (m: number) => Math.round(m)
   const summary = `Salida ${departure}, llegada cerca de las ${arrival}. ${(['chofer', 'puerta', 'none'] as const)
-    .map((s) => `${labels[s]}: ${round(minutes[s])} min`)
+    .map((s) => `${labels[s]}: ${formatDuration(minutes[s])}`)
     .join(', ')}.`
 
   return (
@@ -48,7 +48,7 @@ export function TripTimeline({ departure, totalMinutes, minutes, runs, mode = 'm
           <li key={s} className="flex items-center gap-1.5">
             <span className="inline-block size-2.5 rounded-full" style={{ background: COLOR[s] }} aria-hidden="true" />
             <span className="text-mute">{labels[s]}</span>
-            <span className="font-semibold tabular-nums">{round(minutes[s])} min</span>
+            <span className="font-semibold tabular-nums">{formatDuration(minutes[s])}</span>
           </li>
         ))}
       </ul>

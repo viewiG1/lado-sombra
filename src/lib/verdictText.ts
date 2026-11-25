@@ -1,4 +1,5 @@
 import type { Analysis, NoSideReason, SunSide } from './analyze'
+import { formatDuration as fmt } from './format'
 import { sideLabel, type TravelMode } from './modes'
 
 export interface VerdictText {
@@ -56,13 +57,12 @@ const REASON: Record<TravelMode, Record<NoSideReason, { lead: string; detail: st
 }
 
 export function describeVerdict(a: Analysis, mode: TravelMode = 'micro'): VerdictText {
-  const total = Math.max(1, Math.round(a.totalMinutes))
-  const ch = Math.round(a.minutes.chofer)
-  const pu = Math.round(a.minutes.puerta)
-  const glare = Math.round(a.glareMinutes)
+  const total = fmt(Math.max(1, a.totalMinutes))
+  const ch = fmt(a.minutes.chofer)
+  const pu = fmt(a.minutes.puerta)
   const warning =
     mode !== 'micro' && a.glareMinutes >= GLARE_WARNING_MIN
-      ? `El sol bajo te va a dar en la cara ~${glare} min: lleva lentes de sol${mode === 'bici' ? ' y anda con cuidado' : ''}.`
+      ? `El sol bajo te va a dar en la cara ~${fmt(a.glareMinutes)}: lleva lentes de sol${mode === 'bici' ? ' y anda con cuidado' : ''}.`
       : null
   const base = { warning, reason: null }
   const v = a.verdict
@@ -77,8 +77,8 @@ export function describeVerdict(a: Analysis, mode: TravelMode = 'micro'): Verdic
     const right = sideLabel(mode, 'puerta')
     const detail =
       mode === 'micro'
-        ? `El sol pega ${ch} min en el lado chofer y ${pu} min en el lado puerta.`
-        : `El sol te da ${ch} min por la ${left} y ${pu} min por la ${right}.`
+        ? `El sol pega ${ch} en el lado chofer y ${pu} en el lado puerta.`
+        : `El sol te da ${ch} por la ${left} y ${pu} por la ${right}.`
     const hint =
       mode === 'micro'
         ? 'Te va a dar más o menos lo mismo en cualquier lado.'
@@ -99,7 +99,7 @@ export function describeVerdict(a: Analysis, mode: TravelMode = 'micro'): Verdic
       lead: 'Siéntate al',
       emphasis: MICRO_SIDE[seat],
       side: seat,
-      detail: `El sol pega en el lado ${sunny} ${sunnyMin} de ~${total} min.`,
+      detail: `El sol pega en el lado ${sunny} ${sunnyMin} de ~${total}.`,
       hint: MICRO_HINT[seat],
     }
   }
@@ -110,7 +110,7 @@ export function describeVerdict(a: Analysis, mode: TravelMode = 'micro'): Verdic
       lead: 'Camina por la vereda de la',
       emphasis: sunnyName,
       side: sunny,
-      detail: `El sol viene de tu ${sunnyName} ${sunnyMin} de ~${total} min: los edificios de ese lado dan sombra a su vereda.`,
+      detail: `El sol viene de tu ${sunnyName} ${sunnyMin} de ~${total}: los edificios de ese lado dan sombra a su vereda.`,
       hint: 'Mientras más alto el sol, más angosta la sombra: anda pegado a los edificios.',
     }
   }
@@ -119,7 +119,7 @@ export function describeVerdict(a: Analysis, mode: TravelMode = 'micro'): Verdic
     lead: 'El sol te pega por la',
     emphasis: sunnyName,
     side: sunny,
-    detail: `${sunnyMin} de ~${total} min en bici.`,
+    detail: `${sunnyMin} de ~${total} en bici.`,
     hint: 'Si puedes, elige calles con árboles.',
   }
 }
