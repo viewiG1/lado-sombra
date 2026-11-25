@@ -32,13 +32,13 @@ export function createOpenMeteoUv(opts: { baseUrl?: string; fetchFn?: FetchFn } 
       const params = new URLSearchParams({
         latitude: la,
         longitude: lo,
-        hourly: 'uv_index,uv_index_clear_sky',
+        hourly: 'uv_index,uv_index_clear_sky,temperature_2m,apparent_temperature',
         timezone: 'GMT',
         start_date: date,
         end_date: nextDay(date),
       })
       const res = await requestJson(`${baseUrl}/v1/forecast?${params}`, { fetchFn: opts.fetchFn, signal })
-      const b = res.body as { error?: unknown; reason?: unknown; hourly?: { time?: unknown; uv_index?: unknown; uv_index_clear_sky?: unknown } } | null
+      const b = res.body as { error?: unknown; reason?: unknown; hourly?: { time?: unknown; uv_index?: unknown; uv_index_clear_sky?: unknown; temperature_2m?: unknown; apparent_temperature?: unknown } } | null
 
       let result: UvSeries | null
       if (res.status === 400 && b?.error === true) {
@@ -62,7 +62,9 @@ export function createOpenMeteoUv(opts: { baseUrl?: string; fetchFn?: FetchFn } 
         }
         const times = time.map((t) => Date.parse(`${String(t)}:00Z`))
         if (times.some(Number.isNaN)) throw new AppError('service')
-        result = { times, uv, clearSky: clear }
+        // Las temperaturas son un extra: si faltan o vienen mal, el UV igual sirve.
+        const optional = (x: unknown) => (Array.isArray(x) && x.length === time.length && x.every(isNumOrNull) ? x : time.map(() => null))
+        result = { times, uv, clearSky: clear, temp: optional(h?.temperature_2m), feels: optional(h?.apparent_temperature) }
       }
 
       if (cache.size >= CACHE_SIZE) cache.delete(cache.keys().next().value!)

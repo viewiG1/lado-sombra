@@ -27,7 +27,7 @@ function osrmRoute(url: string) {
 function openMeteo(url: string) {
   const start = Date.parse(`${new URL(url).searchParams.get('start_date')}T00:00:00Z`)
   const time = Array.from({ length: 48 }, (_, i) => new Date(start + i * 3600000).toISOString().slice(0, 16))
-  return { hourly: { time, uv_index: time.map(() => 5), uv_index_clear_sky: time.map(() => 7) } }
+  return { hourly: { time, uv_index: time.map(() => 5), uv_index_clear_sky: time.map(() => 7), temperature_2m: time.map(() => 29.4), apparent_temperature: time.map(() => 31.2) } }
 }
 
 const fetchMock = vi.fn(async (input: string | URL) => {
@@ -204,11 +204,14 @@ describe('App: modos, UV y mapa', () => {
     render(<App />)
     await pickMode(user, /^Caminando$/)
     setDateTime('2026-11-24', '15:00')
-    const uv = await screen.findByRole('region', { name: 'Rayos UV' })
+    const uv = await screen.findByRole('region', { name: 'Rayos UV y temperatura' })
     await within(uv).findByText(/Pronóstico por hora de Open-Meteo/)
     expect(uv).toHaveTextContent('Índice UV 5')
     expect(uv).toHaveTextContent('Moderado')
     expect(uv).toHaveTextContent('podría llegar a 7')
+    expect(uv).toHaveTextContent('29 °C')
+    expect(uv).toHaveTextContent('se siente como 31 °C')
+    expect(uv).toHaveTextContent('Hace calor: lleva agua.')
   })
 
   test('el botón del mapa cambia entre claro y oscuro y lo recuerda', async () => {

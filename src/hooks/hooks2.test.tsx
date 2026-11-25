@@ -7,7 +7,7 @@ import type { UvProvider } from '../services/uv'
 import { useStoredChoice } from './useStoredChoice'
 import { useUv } from './useUv'
 
-const SERIES: UvSeries = { times: [0, 3600000], uv: [1, 2], clearSky: [1, 2] }
+const SERIES: UvSeries = { times: [0, 3600000], uv: [1, 2], clearSky: [1, 2], temp: [20, 21], feels: [20, 21] }
 
 afterEach(() => localStorage.clear())
 

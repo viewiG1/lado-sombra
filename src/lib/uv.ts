@@ -1,10 +1,14 @@
 import { sunPosition } from './sun'
 
-/** Serie por hora (instantes UTC). Cada valor es el promedio de la hora que termina en ese instante. */
+/** Serie por hora (instantes UTC). UV: promedio de la hora que termina en ese instante. Temperaturas: del instante. */
 export interface UvSeries {
   times: number[]
   uv: (number | null)[]
   clearSky: (number | null)[]
+  /** °C */
+  temp: (number | null)[]
+  /** Sensación térmica, °C */
+  feels: (number | null)[]
 }
 
 export type UvLevel = 'bajo' | 'moderado' | 'alto' | 'muy-alto' | 'extremo'
@@ -38,10 +42,12 @@ export function uvCategory(uv: number): UvCategory {
   return { level: 'extremo', label: 'Extremo', advice: 'Evita exponerte. Si sales: bloqueador, gorro, lentes, ropa que cubra y sombra.' }
 }
 
-/** Valor interpolado en el instante `ms`; null si la serie no lo cubre o no tiene datos. */
-function seriesAt(times: number[], values: (number | null)[], ms: number): number | null {
-  // El valor marcado a las HH es el promedio de la hora anterior: representa el instante HH − 30 min.
-  const t = ms + HOUR / 2
+/**
+ * Valor interpolado en el instante `ms`; null si la serie no lo cubre o no tiene datos.
+ * `hourAverage`: el valor marcado a las HH es el promedio de la hora anterior (representa HH − 30 min).
+ */
+function seriesAt(times: number[], values: (number | null)[], ms: number, hourAverage: boolean): number | null {
+  const t = hourAverage ? ms + HOUR / 2 : ms
   for (let i = 1; i < times.length; i++) {
     const t0 = times[i - 1]!
     const t1 = times[i]!
@@ -60,6 +66,28 @@ export interface TripUv {
   /** UV máximo con cielo despejado (lo que podría haber sin nubes). */
   clearSky: number
   source: 'pronostico' | 'estimado'
+  /** Temperatura y sensación térmica máximas del viaje (°C); null sin pronóstico. */
+  heat: { temp: number; feels: number } | null
+}
+
+/** Consejo según la sensación térmica; null si no hace falta. */
+export function heatAdvice(feels: number): string | null {
+  if (feels >= 32) return 'Mucho calor: lleva agua y evita el sol directo.'
+  if (feels >= 27) return 'Hace calor: lleva agua.'
+  if (feels <= 5) return 'Hace frío: abrígate.'
+  return null
+}
+
+function heatForTrip(series: UvSeries, samples: number[]): TripUv['heat'] {
+  let temp = -Infinity
+  let feels = -Infinity
+  for (const ms of samples) {
+    const t = seriesAt(series.times, series.temp, ms, false)
+    if (t === null) return null
+    temp = Math.max(temp, t)
+    feels = Math.max(feels, seriesAt(series.times, series.feels, ms, false) ?? t)
+  }
+  return { temp, feels }
 }
 
 /** UV máximo entre la salida y la llegada. Usa el pronóstico si lo cubre; si no, lo estima con la altura del sol. */
@@ -75,8 +103,8 @@ export function uvForTrip(input: { series: UvSeries | null; departureMs: number;
     let clear = 0
     let ok = true
     for (const ms of samples) {
-      const u = seriesAt(series.times, series.uv, ms)
-      const c = seriesAt(series.times, series.clearSky, ms)
+      const u = seriesAt(series.times, series.uv, ms, true)
+      const c = seriesAt(series.times, series.clearSky, ms, true)
       if (u === null) {
         ok = false
         break
@@ -84,9 +112,9 @@ export function uvForTrip(input: { series: UvSeries | null; departureMs: number;
       uv = Math.max(uv, u)
       clear = Math.max(clear, c ?? u)
     }
-    if (ok) return { uv, clearSky: Math.max(clear, uv), source: 'pronostico' }
+    if (ok) return { uv, clearSky: Math.max(clear, uv), source: 'pronostico', heat: heatForTrip(series, samples) }
   }
 
   const est = Math.max(...samples.map((ms) => estimateUv(sunPosition(ms, lat, lon).elevation)))
-  return { uv: est, clearSky: est, source: 'estimado' }
+  return { uv: est, clearSky: est, source: 'estimado', heat: series ? heatForTrip(series, samples) : null }
 }

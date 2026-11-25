@@ -1,5 +1,5 @@
 import type { TravelMode } from '../lib/modes'
-import { uvCategory, type TripUv, type UvLevel } from '../lib/uv'
+import { heatAdvice, uvCategory, type TripUv, type UvLevel } from '../lib/uv'
 
 const BADGE: Record<UvLevel, { bg: string; fg: string }> = {
   bajo: { bg: 'var(--uv-bajo)', fg: '#ffffff' },
@@ -27,7 +27,7 @@ export function UvCard({ uv, mode, hasTrip, loading }: Props) {
   return (
     <section aria-labelledby="uv-title" className="rounded-2xl border border-line p-4">
       <h2 id="uv-title" className="font-display text-2xl font-bold">
-        Rayos UV
+        Rayos UV y temperatura
       </h2>
       <div className="mt-2 flex items-center gap-3">
         <span
@@ -46,6 +46,13 @@ export function UvCard({ uv, mode, hasTrip, loading }: Props) {
           <p className="text-sm text-mute">{cat.advice}</p>
         </div>
       </div>
+      {uv.heat && (
+        <p className="mt-3 flex flex-wrap items-baseline gap-x-2 text-sm">
+          <span className="font-display text-2xl font-bold tabular-nums">{Math.round(uv.heat.temp)} °C</span>
+          <span className="text-mute">se siente como {Math.round(uv.heat.feels)} °C</span>
+          {heatAdvice(uv.heat.feels) && <span className="basis-full font-medium">{heatAdvice(uv.heat.feels)}</span>}
+        </p>
+      )}
       {uv.source === 'pronostico' && clear > value && (
         <p className="mt-2 text-sm">
           Si se despeja, podría llegar a <b>{clear}</b> ({clearCat.label.toLowerCase()}).
@@ -56,7 +63,7 @@ export function UvCard({ uv, mode, hasTrip, loading }: Props) {
       )}
       <p className="mt-2 text-xs text-mute">
         {uv.source === 'pronostico'
-          ? 'Pronóstico por hora de Open-Meteo (considera las nubes).'
+          ? 'Pronóstico por hora de Open-Meteo (UV con nubes y temperatura máxima del viaje).'
           : 'Estimado con la altura del sol, como si estuviera despejado: no hay pronóstico para esa fecha o estás sin conexión.'}
       </p>
     </section>

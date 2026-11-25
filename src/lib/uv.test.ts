@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { chileToUtc } from './time'
-import { estimateUv, uvCategory, uvForTrip, type UvSeries } from './uv'
+import { estimateUv, heatAdvice, uvCategory, uvForTrip, type UvSeries } from './uv'
 
 const STGO = { lat: -33.44, lon: -70.65 }
 
@@ -46,6 +46,8 @@ describe('uvForTrip', () => {
     times: hours,
     uv: hours.map((_, i) => (i === 21 ? 4 : i === 22 ? 2 : i === 20 ? 6 : 0)),
     clearSky: hours.map((_, i) => (i === 21 ? 5 : i === 22 ? 3 : i === 20 ? 7 : 0)),
+    temp: hours.map((_, i) => 20 + (i === 21 ? 8 : 0)),
+    feels: hours.map((_, i) => 19 + (i === 21 ? 12 : 0)),
   }
 
   test('usa el pronóstico y entrega el máximo durante el viaje', () => {
@@ -75,7 +77,42 @@ describe('uvForTrip', () => {
   })
 
   test('el pronóstico sin datos (null) cae a la estimación', () => {
-    const empty: UvSeries = { times: hours, uv: hours.map(() => null), clearSky: hours.map(() => null) }
+    const empty: UvSeries = { times: hours, uv: hours.map(() => null), clearSky: hours.map(() => null), temp: hours.map(() => null), feels: hours.map(() => null) }
     expect(uvForTrip({ series: empty, departureMs: chileToUtc('2026-11-24', '18:00'), minutes: 20, ...STGO }).source).toBe('estimado')
+  })
+})
+
+describe('temperatura durante el viaje', () => {
+  const t0 = Date.UTC(2026, 10, 24, 0)
+  const hours = Array.from({ length: 48 }, (_, i) => t0 + i * 3600000)
+  const series: UvSeries = {
+    times: hours,
+    uv: hours.map(() => 0),
+    clearSky: hours.map(() => 0),
+    // 18:00 Chile = 21:00 UTC: 28 °C (sensación 31 °C); el resto, 20 °C.
+    temp: hours.map((_, i) => (i === 21 ? 28 : 20)),
+    feels: hours.map((_, i) => (i === 21 ? 31 : 19)),
+  }
+
+  test('entrega la máxima del viaje (la temperatura es del instante: sin desplazar)', () => {
+    const r = uvForTrip({ series, departureMs: chileToUtc('2026-11-24', '18:00'), minutes: 20, ...STGO })
+    expect(r.heat).toEqual({ temp: 28, feels: 31 })
+  })
+
+  test('sin pronóstico no inventa temperatura', () => {
+    expect(uvForTrip({ series: null, departureMs: chileToUtc('2026-11-24', '18:00'), minutes: 20, ...STGO }).heat).toBeNull()
+  })
+})
+
+describe('heatAdvice', () => {
+  test.each([
+    [34, /Mucho calor/],
+    [28, /Hace calor/],
+    [18, null],
+    [4, /frío/],
+  ] as const)('sensación %d °C', (feels, expected) => {
+    const a = heatAdvice(feels)
+    if (expected === null) expect(a).toBeNull()
+    else expect(a).toMatch(expected)
   })
 })
