@@ -1,0 +1,19 @@
+# Encabezados de Netlify (funcionan al subir por GitHub, por la terminal o arrastrando la carpeta dist).
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(self), camera=(), microphone=()
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# El worker de MapLibre es un módulo .mjs: debe servirse como JavaScript.
+/assets/*.mjs
+  Content-Type: text/javascript; charset=utf-8
+
+# El service worker y el manifiesto no deben quedar en caché del navegador.
+/sw.js
+  Cache-Control: no-cache
+
+/manifest.webmanifest
+  Content-Type: application/manifest+json

@@ -1,35 +1,7 @@
+# Los encabezados están en public/_headers (así también sirven al subir la carpeta dist a mano).
 [build]
   command = "npm run build"
   publish = "dist"
 
 [build.environment]
   NODE_VERSION = "24"
-
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "geolocation=(self), camera=(), microphone=()"
-
-[[headers]]
-  for = "/assets/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-# El worker de MapLibre es un módulo .mjs: debe servirse como JavaScript.
-[[headers]]
-  for = "/assets/*.mjs"
-  [headers.values]
-    Content-Type = "text/javascript; charset=utf-8"
-
-# El service worker y el manifiesto no deben quedar en caché del navegador.
-[[headers]]
-  for = "/sw.js"
-  [headers.values]
-    Cache-Control = "no-cache"
-
-[[headers]]
-  for = "/manifest.webmanifest"
-  [headers.values]
-    Content-Type = "application/manifest+json"
