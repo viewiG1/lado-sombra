@@ -184,3 +184,18 @@ describe('analyzeRoute: el sol aunque no pegue de lado', () => {
     expect(a.runs.reduce((s, r) => s + r.minutes, 0)).toBeCloseTo(a.totalMinutes, 6)
   })
 })
+
+describe('analyzeRoute: sol bajo en la cara', () => {
+  const west: LngLat[] = Array.from({ length: 11 }, (_, i): LngLat => [START[0] - (0.03 * i) / 10, START[1]])
+  const east: LngLat[] = Array.from({ length: 11 }, (_, i): LngLat => [START[0] + (0.03 * i) / 10, START[1]])
+
+  test('hacia el poniente a las 19:00: el sol bajo da en la cara todo el viaje', () => {
+    const a = analyzeRoute(route(west, 600), chileToUtc('2026-11-24', '19:00'))
+    expect(a.glareMinutes).toBeCloseTo(a.totalMinutes, 1)
+  })
+
+  test('de espalda al sol o con el sol alto no encandila', () => {
+    expect(analyzeRoute(route(east, 600), chileToUtc('2026-11-24', '19:00')).glareMinutes).toBe(0)
+    expect(analyzeRoute(route(west, 600), chileToUtc('2026-12-21', '13:40')).glareMinutes).toBe(0)
+  })
+})

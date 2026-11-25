@@ -1,4 +1,5 @@
 import type { Run } from '../lib/analyze'
+import type { TravelMode } from '../lib/modes'
 import type { Side } from '../lib/sun'
 import { arrivalTime } from '../lib/timeline'
 
@@ -7,17 +8,22 @@ interface Props {
   totalMinutes: number
   minutes: Record<Side, number>
   runs: Run[]
+  mode?: TravelMode
 }
 
 const COLOR: Record<Side, string> = { chofer: 'var(--chofer)', puerta: 'var(--puerta)', none: 'var(--nosun)' }
-const LABEL: Record<Side, string> = { chofer: 'Sol lado chofer', puerta: 'Sol lado puerta', none: 'Sin sol de lado' }
+const LABEL: Record<'micro' | 'otro', Record<Side, string>> = {
+  micro: { chofer: 'Sol lado chofer', puerta: 'Sol lado puerta', none: 'Sin sol de lado' },
+  otro: { chofer: 'Sol a tu izquierda', puerta: 'Sol a tu derecha', none: 'Sin sol de lado' },
+}
 
 /** El viaje de principio a fin, pintado según dónde pega el sol en cada momento. */
-export function TripTimeline({ departure, totalMinutes, minutes, runs }: Props) {
+export function TripTimeline({ departure, totalMinutes, minutes, runs, mode = 'micro' }: Props) {
+  const labels = LABEL[mode === 'micro' ? 'micro' : 'otro']
   const arrival = arrivalTime(departure, totalMinutes)
   const round = (m: number) => Math.round(m)
   const summary = `Salida ${departure}, llegada cerca de las ${arrival}. ${(['chofer', 'puerta', 'none'] as const)
-    .map((s) => `${LABEL[s]}: ${round(minutes[s])} min`)
+    .map((s) => `${labels[s]}: ${round(minutes[s])} min`)
     .join(', ')}.`
 
   return (
@@ -41,7 +47,7 @@ export function TripTimeline({ departure, totalMinutes, minutes, runs }: Props) 
         {(['chofer', 'puerta', 'none'] as const).map((s) => (
           <li key={s} className="flex items-center gap-1.5">
             <span className="inline-block size-2.5 rounded-full" style={{ background: COLOR[s] }} aria-hidden="true" />
-            <span className="text-mute">{LABEL[s]}</span>
+            <span className="text-mute">{labels[s]}</span>
             <span className="font-semibold tabular-nums">{round(minutes[s])} min</span>
           </li>
         ))}

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { MAX_NAME_LENGTH, type Favorite } from '../lib/favorites'
+import { MODES } from '../lib/modes'
 import { CloseIcon, StarIcon } from './icons'
 
 interface Props {
@@ -73,7 +74,7 @@ export function Favorites({ favorites, canSave, saveFailed, onSave, onLoad, onRe
               >
                 <span className="block font-medium">{f.name}</span>
                 <span className="block text-sm text-mute">
-                  Salida {f.time} · {f.from.name} → {f.to.name}
+                  {MODES[f.mode].label} · salida {f.time} · {f.from.name} → {f.to.name}
                 </span>
               </button>
               <button

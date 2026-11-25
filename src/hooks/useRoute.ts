@@ -14,7 +14,7 @@ export type RouteState =
 export function useRoute(from: LatLon | null, to: LatLon | null, provider: RoutingProvider) {
   const [attempt, setAttempt] = useState(0)
   const [result, setResult] = useState<Result | null>(null)
-  const key = from && to ? `${from.lat},${from.lon};${to.lat},${to.lon};${attempt}` : null
+  const key = from && to ? `${provider.id};${from.lat},${from.lon};${to.lat},${to.lon};${attempt}` : null
 
   const fromLat = from?.lat
   const fromLon = from?.lon

@@ -38,6 +38,8 @@ export interface Analysis {
   minutes: Record<Side, number>
   totalMinutes: number
   verdict: Verdict
+  /** Minutos con el sol bajo de frente (encandila a quien camina o pedalea). */
+  glareMinutes: number
   /** Minutos sin sol de lado, según el motivo (suman minutes.none). */
   reasons: Record<NoSideReason, number>
   /** Lado que recibe más sol y dónde está el sol en promedio mientras pega ahí (para el dibujo). */
@@ -52,6 +54,8 @@ export interface AnalyzeOptions {
 }
 
 const RAD = Math.PI / 180
+/** Bajo esta altura, el sol de frente da en los ojos. */
+export const GLARE_MAX_ELEVATION = 30
 const opposite = (s: SunSide): SunSide => (s === 'chofer' ? 'puerta' : 'chofer')
 
 /** Promedio de ángulos con suma vectorial (359° y 1° promedian 0°, no 180°), ponderado por minutos. */
@@ -98,6 +102,7 @@ export function analyzeRoute(route: Route, departureUtcMs: number, options: Anal
   const reasons: Record<NoSideReason, number> = { frente: 0, atras: 0, alto: 0, noche: 0 }
   const bySide: Record<SunSide, SunAverage> = { chofer: new SunAverage(), puerta: new SunAverage() }
   const sky = new SunAverage()
+  let glareMinutes = 0
   const runs: Run[] = []
   let elapsedMin = 0
 
@@ -117,6 +122,7 @@ export function analyzeRoute(route: Route, departureUtcMs: number, options: Anal
     } else {
       side = 'none'
       reasons[situation] += pieceMin
+      if (situation === 'frente' && sun.elevation < GLARE_MAX_ELEVATION) glareMinutes += pieceMin
     }
     minutes[side] += pieceMin
     if (sun.elevation > 0) sky.add(rel, sun.elevation, pieceMin)
@@ -142,6 +148,7 @@ export function analyzeRoute(route: Route, departureUtcMs: number, options: Anal
     minutes,
     totalMinutes: elapsedMin,
     verdict: verdictFor(minutes, elapsedMin),
+    glareMinutes,
     reasons,
     dominant,
     sky: sky.result(),

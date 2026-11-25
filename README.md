@@ -4,6 +4,14 @@
 
 Pensada para Chile: el chofer va a la izquierda y la puerta a la derecha.
 
+Al abrirla pregunta cómo vas a viajar:
+
+- **Micro**: de qué lado sentarte para ir a la sombra.
+- **Bicicleta**: por qué lado te va a pegar el sol y si te dará en la cara.
+- **Caminando**: qué vereda tiene sombra de los edificios (la del lado del sol).
+
+En todos los modos muestra el **índice UV** durante el viaje (pronóstico de Open-Meteo, o una estimación si no hay pronóstico) y el mapa tiene un botón para pasar de mapa oscuro a claro.
+
 ## Requisitos
 
 - [Node.js](https://nodejs.org/) 20 o más nuevo (probado con Node 24)
@@ -111,5 +119,7 @@ No se usa ninguna clave de API. Si en el futuro se necesita alguna, va en un arc
 
 - Mapa: © colaboradores de [OpenStreetMap](https://www.openstreetmap.org/copyright), teselas de [OpenFreeMap](https://openfreemap.org/) y OpenMapTiles.
 - Rutas: [OSRM](https://project-osrm.org/) (servidor de demostración: pensado para uso liviano).
+- Rutas en bici y a pie: servidores OSRM de [FOSSGIS](https://routing.openstreetmap.de/) (uso liviano).
 - Búsqueda: [Nominatim](https://nominatim.org/) ([política de uso](https://operations.osmfoundation.org/policies/nominatim/)).
+- Índice UV: [Open-Meteo](https://open-meteo.com/) (CC BY 4.0). Sin pronóstico, se estima con UV ≈ 9,5 · sen(elevación del sol)^1,5.
 - Posición del sol: [SunCalc](https://github.com/mourner/suncalc).

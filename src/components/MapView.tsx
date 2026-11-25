@@ -8,7 +8,7 @@ import type { Run } from '../lib/analyze'
 import type { LngLat } from '../lib/geo'
 import { localizeStyle } from '../lib/mapStyle'
 import type { LatLon, Place } from '../lib/place'
-import { useMediaQuery, usePrefersDark } from '../hooks/useMediaQuery'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 
 export interface MapViewProps {
   from: Place | null
@@ -17,6 +17,7 @@ export interface MapViewProps {
   routeCoords: LngLat[] | null
   runs: Run[] | null
   onPick: (p: LatLon) => void
+  theme: MapTheme
 }
 
 // MapLibre 6 carga su worker aparte: Vite lo copia a /assets y aquí le decimos dónde quedó.
@@ -39,17 +40,12 @@ function loadStyle(theme: keyof typeof STYLE_URL): Promise<StyleSpecification> {
   return styleCache[theme]
 }
 
-/** `theme` solo sirve para recalcular cuando cambia el tema: las variables CSS ya cambiaron. */
-function readRouteColors(theme: string) {
-  const css = getComputedStyle(document.documentElement)
-  const v = (name: string, fallback: string) => css.getPropertyValue(name).trim() || fallback
-  const dark = theme === 'dark'
-  return {
-    chofer: v('--chofer', dark ? '#f0555c' : '#d7262e'),
-    puerta: v('--puerta', dark ? '#5b95f0' : '#2160c4'),
-    none: v('--nosun', dark ? '#7d8592' : '#9aa1ac'),
-    casing: v('--casing', dark ? '#14161b' : '#ffffff'),
-  }
+export type MapTheme = 'light' | 'dark'
+
+/** Colores de la ruta según el tema del mapa (puede no coincidir con el de la app). Mismos tonos que las variables CSS. */
+const ROUTE_COLORS: Record<MapTheme, { chofer: string; puerta: string; none: string; casing: string }> = {
+  light: { chofer: '#d7262e', puerta: '#2160c4', none: '#9aa1ac', casing: '#ffffff' },
+  dark: { chofer: '#f0555c', puerta: '#5b95f0', none: '#7d8592', casing: '#14161b' },
 }
 
 function PointMarker({ place, kind }: { place: Place; kind: 'from' | 'to' }) {
@@ -65,10 +61,8 @@ function PointMarker({ place, kind }: { place: Place; kind: 'from' | 'to' }) {
   )
 }
 
-export default function MapView({ from, to, routeCoords, runs, onPick }: MapViewProps) {
-  const dark = usePrefersDark()
+export default function MapView({ from, to, routeCoords, runs, onPick, theme }: MapViewProps) {
   const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
-  const theme = dark ? 'dark' : 'light'
   const [style, setStyle] = useState<{ theme: string; spec: StyleSpecification } | null>(null)
   const [failed, setFailed] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
@@ -86,8 +80,7 @@ export default function MapView({ from, to, routeCoords, runs, onPick }: MapView
     }
   }, [theme, attempt])
 
-  // Colores desde las variables CSS (una sola fuente para la interfaz y el mapa); cambian con el tema.
-  const colors = useMemo(() => readRouteColors(theme), [theme])
+  const colors = ROUTE_COLORS[theme]
 
   const geojson = useMemo(
     () => ({

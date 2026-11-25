@@ -11,6 +11,8 @@ export interface RouteResult extends Route {
 
 /** Cualquier proveedor de rutas (OSRM hoy; otro mañana) cumple esta interfaz. */
 export interface RoutingProvider {
+  /** Identifica al proveedor y su perfil: si cambia, la ruta se vuelve a pedir. */
+  readonly id: string
   route(from: LatLon, to: LatLon, signal?: AbortSignal): Promise<RouteResult>
 }
 
@@ -27,6 +29,7 @@ interface OsrmRoute {
 export function createOsrmProvider(opts: { baseUrl?: string; fetchFn?: FetchFn } = {}): RoutingProvider {
   const baseUrl = opts.baseUrl ?? OSRM_URL
   return {
+    id: baseUrl,
     async route(from, to, signal) {
       if (!isValidLatLon(from) || !isValidLatLon(to)) throw new RangeError('Coordenadas inválidas')
       const path = `${from.lon},${from.lat};${to.lon},${to.lat}`

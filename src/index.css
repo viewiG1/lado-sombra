@@ -23,6 +23,14 @@
   --sun-seat: #ffd66b;
   --sun-day: #ffd35c;
   --sun-night: #3b4352;
+  --road: #cfd4db;
+  --building: #e7eaee;
+  /* Escala UV de la OMS */
+  --uv-bajo: #289500;
+  --uv-moderado: #f7e400;
+  --uv-alto: #f85900;
+  --uv-muy-alto: #d8001d;
+  --uv-extremo: #6b49c8;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -40,6 +48,8 @@
     --sun-seat: #a77a12;
     --sun-day: #d9a21b;
     --sun-night: #2f343d;
+    --road: #2a2f38;
+    --building: #3a414d;
   }
 }
 

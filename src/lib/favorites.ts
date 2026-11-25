@@ -1,3 +1,4 @@
+import { isTravelMode, type TravelMode } from './modes'
 import { isValidLatLon, type Place } from './place'
 
 export interface Favorite {
@@ -7,6 +8,7 @@ export interface Favorite {
   to: Place
   /** Hora de salida "HH:MM"; al cargar se usa con la fecha de hoy. */
   time: string
+  mode: TravelMode
 }
 
 export const STORAGE_KEY = 'lado-sombra:favoritos'
@@ -35,7 +37,9 @@ function toFavorite(x: unknown): Favorite | null {
   const from = toPlace(r.from)
   const to = toPlace(r.to)
   const time = typeof r.time === 'string' && TIME_RE.test(r.time) ? r.time : null
-  return id && name && from && to && time ? { id, name, from, to, time } : null
+  // Las rutas guardadas antes de que existieran los modos eran en micro.
+  const mode = isTravelMode(r.mode) ? r.mode : 'micro'
+  return id && name && from && to && time ? { id, name, from, to, time, mode } : null
 }
 
 /** Lee lo guardado; cualquier dato corrupto se descarta sin romper la app. */
@@ -59,7 +63,7 @@ export function serializeFavorites(list: Favorite[]): string {
 export function addFavorite(list: Favorite[], input: Omit<Favorite, 'id'>, id: string): Favorite[] {
   if (!TIME_RE.test(input.time)) throw new RangeError(`Hora inválida: "${input.time}"`)
   const name = (input.name.trim() || `${input.from.name} → ${input.to.name}`).slice(0, MAX_NAME_LENGTH)
-  return [{ id, name, from: input.from, to: input.to, time: input.time }, ...list].slice(0, MAX_FAVORITES)
+  return [{ id, name, from: input.from, to: input.to, time: input.time, mode: input.mode }, ...list].slice(0, MAX_FAVORITES)
 }
 
 export function removeFavorite(list: Favorite[], id: string): Favorite[] {

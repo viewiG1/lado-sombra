@@ -18,11 +18,11 @@ afterEach(() => {
 
 describe('useFavorites', () => {
   test('carga, agrega y borra, guardando en localStorage', () => {
-    localStorage.setItem(STORAGE_KEY, serializeFavorites([{ id: 'x', name: 'Vieja', from: A, to: B, time: '07:00' }]))
+    localStorage.setItem(STORAGE_KEY, serializeFavorites([{ id: 'x', name: 'Vieja', from: A, to: B, time: '07:00', mode: 'micro' }]))
     const { result } = renderHook(() => useFavorites())
     expect(result.current.favorites.map((f) => f.name)).toEqual(['Vieja'])
 
-    act(() => result.current.add({ name: 'Nueva', from: B, to: A, time: '18:30' }))
+    act(() => result.current.add({ name: 'Nueva', from: B, to: A, time: '18:30', mode: 'pie' }))
     expect(result.current.favorites.map((f) => f.name)).toEqual(['Nueva', 'Vieja'])
     expect(localStorage.getItem(STORAGE_KEY)).toContain('Nueva')
 
@@ -35,7 +35,7 @@ describe('useFavorites', () => {
       throw new DOMException('lleno', 'QuotaExceededError')
     })
     const { result } = renderHook(() => useFavorites())
-    act(() => result.current.add({ name: 'Nueva', from: A, to: B, time: '08:00' }))
+    act(() => result.current.add({ name: 'Nueva', from: A, to: B, time: '08:00', mode: 'micro' }))
     expect(result.current.favorites).toHaveLength(1)
     expect(result.current.saveFailed).toBe(true)
   })
@@ -91,14 +91,14 @@ describe('useGeolocation', () => {
 
 describe('useRoute', () => {
   test('sin origen o destino no pide nada', () => {
-    const provider: RoutingProvider = { route: vi.fn() }
+    const provider: RoutingProvider = { id: 'p', route: vi.fn() }
     const { result } = renderHook(() => useRoute(A, null, provider))
     expect(result.current.status).toBe('idle')
     expect(provider.route).not.toHaveBeenCalled()
   })
 
   test('pide la ruta y la entrega', async () => {
-    const provider: RoutingProvider = { route: vi.fn().mockResolvedValue(ROUTE) }
+    const provider: RoutingProvider = { id: 'p', route: vi.fn().mockResolvedValue(ROUTE) }
     const { result } = renderHook(() => useRoute(A, B, provider))
     expect(result.current.status).toBe('loading')
     await waitFor(() => expect(result.current.status).toBe('ok'))
@@ -107,6 +107,7 @@ describe('useRoute', () => {
 
   test('muestra el error y permite reintentar', async () => {
     const provider: RoutingProvider = {
+      id: 'p',
       route: vi.fn().mockRejectedValueOnce(new AppError('no-route')).mockResolvedValueOnce(ROUTE),
     }
     const { result } = renderHook(() => useRoute(A, B, provider))
@@ -120,6 +121,7 @@ describe('useRoute', () => {
     const signals: AbortSignal[] = []
     let resolveFirst: (r: RouteResult) => void = () => {}
     const provider: RoutingProvider = {
+      id: 'p',
       route: vi.fn((_f, _t, signal?: AbortSignal) => {
         signals.push(signal!)
         return signals.length === 1 ? new Promise<RouteResult>((res) => (resolveFirst = res)) : Promise.resolve({ ...ROUTE, durationS: 1 })
@@ -132,5 +134,18 @@ describe('useRoute', () => {
     resolveFirst(ROUTE)
     await Promise.resolve()
     expect(result.current.route?.durationS).toBe(1)
+  })
+})
+
+describe('useRoute al cambiar de modo', () => {
+  test('otro proveedor (otro modo) vuelve a pedir la ruta y no muestra la anterior mientras carga', async () => {
+    const car: RoutingProvider = { id: 'auto', route: vi.fn().mockResolvedValue(ROUTE) }
+    const foot: RoutingProvider = { id: 'pie', route: vi.fn(() => new Promise<RouteResult>(() => {})) }
+    const { result, rerender } = renderHook(({ p }) => useRoute(A, B, p), { initialProps: { p: car } })
+    await waitFor(() => expect(result.current.status).toBe('ok'))
+    rerender({ p: foot })
+    expect(result.current.status).toBe('loading')
+    expect(result.current.route).toBeNull()
+    expect(foot.route).toHaveBeenCalled()
   })
 })
