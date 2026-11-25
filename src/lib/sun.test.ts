@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { chileToUtc } from './time'
-import { classifySide, relativeAngle, sunPosition, sunSituation, sunTimes } from './sun'
+import { relativeAngle, sunPosition, sunSituation, sunTimes } from './sun'
 
 const STGO = { lat: -33.4378, lon: -70.6506 }
 
@@ -32,36 +32,26 @@ describe('relativeAngle', () => {
   })
 })
 
-describe('classifySide', () => {
+describe('sunSituation: bordes de los rangos', () => {
   const sun = (azimuth: number, elevation = 30) => ({ azimuth, elevation })
 
-  test('sol a la derecha → lado puerta; a la izquierda → lado chofer', () => {
-    expect(classifySide(sun(270), 180)).toBe('puerta') // micro al sur, sol al oeste
-    expect(classifySide(sun(270), 0)).toBe('chofer') // micro al norte, sol al oeste
+  test.each([
+    [19.99, 'frente'],
+    [20, 'puerta'],
+    [160, 'puerta'],
+    [160.01, 'atras'],
+    [199.99, 'atras'],
+    [200, 'chofer'],
+    [340, 'chofer'],
+    [340.01, 'frente'],
+  ] as const)('sol a %d° con rumbo norte → %s', (az, expected) => {
+    expect(sunSituation(sun(az), 0)).toBe(expected)
   })
 
-  test('de frente o por atrás → sin sol de lado', () => {
-    expect(classifySide(sun(10), 0)).toBe('none')
-    expect(classifySide(sun(350), 0)).toBe('none')
-    expect(classifySide(sun(180), 0)).toBe('none')
-  })
-
-  test('bordes de los rangos', () => {
-    expect(classifySide(sun(19.99), 0)).toBe('none')
-    expect(classifySide(sun(20), 0)).toBe('puerta')
-    expect(classifySide(sun(160), 0)).toBe('puerta')
-    expect(classifySide(sun(160.01), 0)).toBe('none')
-    expect(classifySide(sun(199.99), 0)).toBe('none')
-    expect(classifySide(sun(200), 0)).toBe('chofer')
-    expect(classifySide(sun(340), 0)).toBe('chofer')
-    expect(classifySide(sun(340.01), 0)).toBe('none')
-  })
-
-  test('sol bajo el horizonte o muy alto → sin sol de lado', () => {
-    expect(classifySide(sun(90, 0), 0)).toBe('none')
-    expect(classifySide(sun(90, -5), 0)).toBe('none')
-    expect(classifySide(sun(90, 65), 0)).toBe('none')
-    expect(classifySide(sun(90, 64.9), 0)).toBe('puerta')
+  test('elevación: 0 es noche, 65 ya es "alto", 64,9 todavía cuenta de lado', () => {
+    expect(sunSituation(sun(90, 0), 0)).toBe('noche')
+    expect(sunSituation(sun(90, 65), 0)).toBe('alto')
+    expect(sunSituation(sun(90, 64.9), 0)).toBe('puerta')
   })
 })
 
@@ -81,15 +71,6 @@ describe('sunSituation: lado o motivo por el que no pega de lado', () => {
     expect(sunSituation(s, heading)).toBe(expected)
   })
 
-  test('es coherente con classifySide', () => {
-    for (let az = 0; az < 360; az += 7) {
-      for (const el of [-5, 10, 40, 70]) {
-        const sit = sunSituation(sun(az, el), 0)
-        const side = classifySide(sun(az, el), 0)
-        expect(side).toBe(sit === 'chofer' || sit === 'puerta' ? sit : 'none')
-      }
-    }
-  })
 })
 
 describe('sunTimes', () => {

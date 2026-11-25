@@ -4,13 +4,15 @@
 
 Pensada para Chile: el chofer va a la izquierda y la puerta a la derecha.
 
-Al abrirla pregunta cómo vas a viajar:
+Arriba de la búsqueda eliges cómo vas a viajar (la app recuerda el último modo y abre directo en él):
 
 - **Micro**: de qué lado sentarte para ir a la sombra.
 - **Bicicleta**: por qué lado te va a pegar el sol y si te dará en la cara.
 - **Caminando**: qué vereda tiene sombra de los edificios (la del lado del sol).
 
-En todos los modos muestra el **índice UV** durante el viaje (pronóstico de Open-Meteo, o una estimación si no hay pronóstico) y el mapa tiene un botón para pasar de mapa oscuro a claro.
+En todos los modos muestra el **índice UV** durante el viaje (pronóstico de Open-Meteo, o una estimación si no hay pronóstico) y el mapa tiene un botón para pasar de mapa oscuro a claro. El mapa usa el estilo detallado "liberty" de OpenFreeMap; su versión nocturna se genera recoloreando ese mismo estilo (`darkenStyle` en `src/lib/mapStyle.ts`).
+
+Si ya diste permiso de ubicación antes, la app parte desde donde estás sin volver a preguntar.
 
 ## Requisitos
 

@@ -5,7 +5,17 @@
 @import '@fontsource/barlow-condensed/latin-600.css';
 @import '@fontsource/barlow-condensed/latin-700.css';
 
-/* Colores del prototipo. El mapa lee --chofer, --puerta, --nosun y --casing para pintar la ruta. */
+/* Dos columnas (panel + mapa): desde tablet, o con el teléfono horizontal. */
+@custom-variant wide {
+  @media (min-width: 48rem) {
+    @slot;
+  }
+  @media (orientation: landscape) and (min-width: 40rem) and (max-height: 32rem) {
+    @slot;
+  }
+}
+
+/* Colores del prototipo. El mapa usa los mismos tonos en su paleta (MapView). */
 :root {
   color-scheme: light dark;
   --bg: #ffffff;
@@ -18,7 +28,6 @@
   --puerta: #2160c4;
   --sun: #ffb800;
   --nosun: #9aa1ac;
-  --casing: #ffffff;
   --bus-shadow: rgb(22 24 29 / 0.16);
   --sun-seat: #ffd66b;
   --sun-day: #ffd35c;
@@ -43,7 +52,6 @@
     --chofer: #f0555c;
     --puerta: #5b95f0;
     --nosun: #7d8592;
-    --casing: #14161b;
     --bus-shadow: rgb(0 0 0 / 0.38);
     --sun-seat: #a77a12;
     --sun-day: #d9a21b;
@@ -224,4 +232,17 @@
 .time-range:focus-visible::-moz-range-thumb {
   outline: 3px solid var(--ink);
   outline-offset: 2px;
+}
+
+/* Controles de zoom con los colores de la app en modo oscuro. */
+@media (prefers-color-scheme: dark) {
+  .maplibregl-ctrl.maplibregl-ctrl-group {
+    background: var(--bg);
+  }
+  .maplibregl-ctrl-group button + button {
+    border-top-color: var(--line);
+  }
+  .maplibregl-ctrl button .maplibregl-ctrl-icon {
+    filter: invert(1);
+  }
 }

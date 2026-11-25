@@ -1,7 +1,7 @@
 import { getPosition, getTimes } from 'suncalc'
 import { chileNow, chileToUtc } from './time'
 
-/** Lado de la micro donde pega el sol. Chile: chofer a la izquierda, puerta a la derecha. */
+/** Lado donde pega el sol ('none' = no pega de lado). Chile: chofer a la izquierda, puerta a la derecha. */
 export type Side = 'chofer' | 'puerta' | 'none'
 
 /** Dónde está el sol respecto de la micro: un lado, o el motivo por el que no pega de lado. */
@@ -37,11 +37,6 @@ export function sunSituation(sun: SunPosition, heading: number): Situation {
   if (rel < t || rel > 360 - t) return 'frente'
   if (rel > 180 - t && rel < 180 + t) return 'atras'
   return rel < 180 ? 'puerta' : 'chofer'
-}
-
-export function classifySide(sun: SunPosition, heading: number): Side {
-  const s = sunSituation(sun, heading)
-  return s === 'chofer' || s === 'puerta' ? s : 'none'
 }
 
 /** Hora de Chile ("HH:MM") a la que sale y se pone el sol ese día en ese lugar; null si no se puede calcular. */

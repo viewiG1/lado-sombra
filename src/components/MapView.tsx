@@ -6,7 +6,7 @@ import Map, { AttributionControl, Layer, Marker, NavigationControl, Source, type
 import { DEFAULT_VIEW } from '../config'
 import type { Run } from '../lib/analyze'
 import type { LngLat } from '../lib/geo'
-import { localizeStyle } from '../lib/mapStyle'
+import { darkenStyle, localizeStyle } from '../lib/mapStyle'
 import type { LatLon, Place } from '../lib/place'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 
@@ -23,18 +23,24 @@ export interface MapViewProps {
 // MapLibre 6 carga su worker aparte: Vite lo copia a /assets y aquí le decimos dónde quedó.
 setWorkerUrl(workerUrl)
 
-const STYLE_URL = { light: 'https://tiles.openfreemap.org/styles/positron', dark: 'https://tiles.openfreemap.org/styles/dark' }
-const styleCache: Partial<Record<keyof typeof STYLE_URL, Promise<StyleSpecification>>> = {}
+// "liberty" de OpenFreeMap: estilo detallado (parques, agua, edificios). De noche se usa su versión recoloreada.
+const STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty'
+let baseStyle: Promise<StyleSpecification> | null = null
+const styleCache: Partial<Record<MapTheme, Promise<StyleSpecification>>> = {}
 
-function loadStyle(theme: keyof typeof STYLE_URL): Promise<StyleSpecification> {
-  styleCache[theme] ??= fetch(STYLE_URL[theme])
+function loadStyle(theme: MapTheme): Promise<StyleSpecification> {
+  baseStyle ??= fetch(STYLE_URL)
     .then((r) => {
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       return r.json() as Promise<StyleSpecification>
     })
     .then(localizeStyle)
+  styleCache[theme] ??= baseStyle
+    .then((style) => (theme === 'dark' ? darkenStyle(style) : style))
     .catch((err: unknown) => {
-      delete styleCache[theme] // permite reintentar
+      // Permite reintentar.
+      baseStyle = null
+      delete styleCache[theme]
       throw err
     })
   return styleCache[theme]
@@ -174,7 +180,7 @@ export default function MapView({ from, to, routeCoords, runs, onPick, theme }: 
           id="route-casing"
           type="line"
           layout={{ 'line-cap': 'round', 'line-join': 'round' }}
-          paint={{ 'line-color': colors.casing, 'line-width': 10 }}
+          paint={{ 'line-color': colors.casing, 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 6, 16, 13] }}
         />
         <Layer
           id="route-line"
@@ -182,7 +188,7 @@ export default function MapView({ from, to, routeCoords, runs, onPick, theme }: 
           layout={{ 'line-cap': 'round', 'line-join': 'round' }}
           paint={{
             'line-color': ['match', ['get', 'side'], 'chofer', colors.chofer, 'puerta', colors.puerta, colors.none],
-            'line-width': 6,
+            'line-width': ['interpolate', ['linear'], ['zoom'], 10, 3, 16, 8],
           }}
         />
       </Source>
